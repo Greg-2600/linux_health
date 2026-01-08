@@ -16,5 +16,7 @@ __pycache__
 *.swo
 .github
 tests
-README.md
 health_report.txt
+*.txt
+!requirements.txt
+!requirements-dev.txt

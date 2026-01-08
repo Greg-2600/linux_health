@@ -7,7 +7,14 @@ from paramiko.client import AutoAddPolicy
 class SSHSession:
     """Lightweight SSH client wrapper around paramiko."""
 
-    def __init__(self, hostname: str, username: str, password: str, port: int = 22, timeout: float = 5.0):
+    def __init__(
+        self,
+        hostname: str,
+        username: str,
+        password: str,
+        port: int = 22,
+        timeout: float = 5.0,
+    ):
         self.hostname = hostname
         self.username = username
         self.password = password

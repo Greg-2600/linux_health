@@ -52,11 +52,16 @@ def _scan_single(host: str, port: int, timeout: float) -> PortStatus:
             return PortStatus(port=port, open=False, reason=str(exc))
 
 
-def scan_ports(host: str, ports: Iterable[int], timeout: float = 0.7, max_workers: int = 50) -> List[PortStatus]:
+def scan_ports(
+    host: str, ports: Iterable[int], timeout: float = 0.7, max_workers: int = 50
+) -> List[PortStatus]:
     unique_ports = sorted({int(p) for p in ports if int(p) > 0})
     results: list[PortStatus] = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_port = {executor.submit(_scan_single, host, port, timeout): port for port in unique_ports}
+        future_to_port = {
+            executor.submit(_scan_single, host, port, timeout): port
+            for port in unique_ports
+        }
         for future in as_completed(future_to_port):
             results.append(future.result())
     return sorted(results, key=lambda r: r.port)
