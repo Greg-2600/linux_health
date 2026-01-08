@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  linux-health:
+    build: .
+    image: linux-health:latest
+    container_name: linux-health
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./reports:/app/reports
+    stdin_open: true
+    tty: true
