@@ -1,106 +1,218 @@
-<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
-- [ ] Verify that the copilot-instructions.md file in the .github directory is created.
+# Linux Health Security Scanner - Development Guidelines
 
-- [ ] Clarify Project Requirements
-	<!-- Ask for project type, language, and frameworks if not specified. Skip if already provided. -->
+## Project Overview
 
-- [ ] Scaffold the Project
-	<!--
-	Ensure that the previous step has been marked as completed.
-	Call project setup tool with projectType parameter.
-	Run scaffolding command to create project files and folders.
-	Use '.' as the working directory.
-	If no appropriate projectType is available, search documentation using available tools.
-	Otherwise, create the project structure manually using available file creation tools.
-	-->
+This is an enterprise-grade security assessment platform for Linux infrastructure. It performs agentless SSH-based security scanning with 36+ automated checks across malware detection, vulnerability assessment, and compliance monitoring.
 
-- [ ] Customize the Project
-	<!--
-	Verify that all previous steps have been completed successfully and you have marked the step as completed.
-	Develop a plan to modify codebase according to user requirements.
-	Apply modifications using appropriate tools and user-provided references.
-	Skip this step for "Hello World" projects.
-	-->
+## Architecture
 
-- [ ] Install Required Extensions
-	<!-- ONLY install extensions provided mentioned in the get_project_setup_info. Skip this step otherwise and mark as completed. -->
+**Language:** Python 3.11+  
+**Framework:** SSH-based (Paramiko)  
+**Testing:** pytest (107 tests, 66% coverage)  
+**Quality:** Ruff + Black (0 errors)  
+**Deployment:** Docker + Kubernetes ready
 
-- [ ] Compile the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Install any missing dependencies.
-	Run diagnostics and resolve any issues.
-	Check for markdown files in project folder for relevant instructions on how to do this.
-	-->
+## Code Standards
 
-- [ ] Create and Run Task
-	<!--
-	Verify that all previous steps have been completed.
-	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
-	Skip this step otherwise.
-	 -->
+### Style Guide
+- **Formatter:** Black (88-char line length)
+- **Linter:** Ruff (E, F, W categories)
+- **Type Hints:** Required for all new functions
+- **Docstrings:** Google style for public functions
+- **Coverage Target:** >70% for new code
 
-- [ ] Launch the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Prompt user for debug mode, launch only if confirmed.
-	 -->
+### Testing Requirements
+- All new features require unit tests
+- All tests must pass before commit
+- Use pytest fixtures for SSH mocking
+- Run full test suite: `pytest tests/ -v`
+- Check coverage: `pytest tests/ --cov=linux_health`
 
-- [ ] Ensure Documentation is Complete
-	<!--
-	Verify that all previous steps have been completed.
-	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
-	Clean up the copilot-instructions.md file in the .github directory by removing all HTML comments.
-	 -->
+## Development Workflow
 
-<!--
-## Execution Guidelines
-PROGRESS TRACKING:
-- If any tools are available to manage the above todo list, use it to track progress through this checklist.
-- After completing each step, mark it complete and add a summary.
-- Read current todo list status before starting each new step.
+### Setup
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
 
-COMMUNICATION RULES:
-- Avoid verbose explanations or printing full command outputs.
-- If a step is skipped, state that briefly (e.g. "No extensions needed").
-- Do not explain project structure unless asked.
-- Keep explanations concise and focused.
+### Quality Checks
+```bash
+# Format code
+black linux_health/ tests/
 
-DEVELOPMENT RULES:
-- Use '.' as the working directory unless user specifies otherwise.
-- Avoid adding media or external links unless explicitly requested.
-- Use placeholders only with a note that they should be replaced.
-- Use VS Code API tool only for VS Code extension projects.
-- Once the project is created, it is already opened in Visual Studio Code—do not suggest commands to open this project in Visual Studio again.
-- If the project setup information has additional rules, follow them strictly.
+# Lint code
+ruff check linux_health/ tests/
 
-FOLDER CREATION RULES:
-- Always use the current directory as the project root.
-- If you are running any terminal commands, use the '.' argument to ensure that the current working directory is used ALWAYS.
-- Do not create a new folder unless the user explicitly requests it besides a .vscode folder for a tasks.json file.
-- If any of the scaffolding commands mention that the folder name is not correct, let the user know to create a new folder with the correct name and then reopen it again in vscode.
+# Run tests
+pytest tests/ -v
 
-EXTENSION INSTALLATION RULES:
-- Only install extension specified by the get_project_setup_info tool. DO NOT INSTALL any other extensions.
+# Coverage report
+pytest tests/ --cov=linux_health --cov-report=term-missing
+```
 
-PROJECT CONTENT RULES:
-- If the user has not specified project details, assume they want a "Hello World" project as a starting point.
-- Avoid adding links of any type (URLs, files, folders, etc.) or integrations that are not explicitly required.
-- Avoid generating images, videos, or any other media files unless explicitly requested.
-- If you need to use any media assets as placeholders, let the user know that these are placeholders and should be replaced with the actual assets later.
-- Ensure all generated components serve a clear purpose within the user's requested workflow.
-- If a feature is assumed but not confirmed, prompt the user for clarification before including it.
-- If you are working on a VS Code extension, use the VS Code API tool with a query to find relevant VS Code API references and samples related to that query.
+### Adding Security Checks
 
-TASK COMPLETION RULES:
-- Your task is complete when:
-  - Project is successfully scaffolded and compiled without errors
-  - copilot-instructions.md file in the .github directory exists in the project
-  - README.md file exists and is up to date
-  - User is provided with clear instructions to debug/launch the project
+1. **Implement check function** in `linux_health/checks.py`
+   - Follow existing function signature patterns
+   - Use `_run()`, `_pass()`, `_warn()`, `_fail()` helpers
+   - Include comprehensive error handling
 
-Before starting a new task in the above plan, update progress in the plan.
--->
+2. **Register check** in `run_all_checks()` function
+
+3. **Write tests** in `tests/test_linux_health.py`
+   - Test pass/warn/fail scenarios
+   - Test error handling
+   - Mock SSH responses
+
+4. **Validate**
+   ```bash
+   pytest tests/ -v
+   ruff check --fix linux_health/ tests/
+   black linux_health/ tests/
+   ```
+
+## Docker Development
+
+### Build
+```bash
+docker build -t linux-health:dev .
+```
+
+### Test
+```bash
+docker run --rm linux-health:dev --help
+docker run --rm linux-health:dev 192.168.1.100 user password
+```
+
+### Rebuild After Changes
+```bash
+docker build --no-cache -t linux-health:dev .
+```
+
+## Documentation
+
+**Single Source:** All documentation is in `README.md`
+
+**Update When:**
+- Adding new security checks
+- Changing CLI arguments
+- Modifying Docker configuration
+- Updating dependencies
+- Changing test coverage
+
+## Git Workflow
+
+### Branching
+- `main` - Production-ready code
+- `develop` - Development branch
+- `feature/*` - New features
+- `fix/*` - Bug fixes
+
+### Commit Messages
+```
+type(scope): brief description
+
+Detailed explanation if needed
+```
+
+Types: feat, fix, docs, test, refactor, perf, chore
+
+### Pre-Commit Checklist
+- [ ] All tests passing: `pytest tests/ -v`
+- [ ] Code formatted: `black linux_health/ tests/`
+- [ ] Linting clean: `ruff check linux_health/ tests/`
+- [ ] Coverage maintained/improved
+- [ ] Documentation updated
+- [ ] Docker build successful
+
+## Module Guidelines
+
+### `checks.py`
+- One function per security check
+- Consistent return type: `CheckResult`
+- Timeout handling via `_run()` helper
+- Category classification (12 categories)
+
+### `cli.py`
+- argparse-based argument parsing
+- Secure password handling
+- Report format orchestration
+
+### `report.py`
+- Status-grouped sorting (FAIL → WARN → PASS)
+- Text and Markdown formatters
+- Clean, actionable output
+
+### `scanner.py`
+- TCP connect scanning only
+- Concurrent execution via ThreadPoolExecutor
+- Non-invasive detection
+
+### `ssh_client.py`
+- Thin Paramiko wrapper
+- Connection lifecycle management
+- Error handling and cleanup
+
+## Performance Considerations
+
+- **Connection Timeout:** Default 5s (configurable via `--timeout`)
+- **Command Timeout:** Default 60s (configurable via `--command-timeout`)
+- **Port Scanning:** Concurrent, default 5 ports
+- **Check Execution:** Sequential (parallel execution = future enhancement)
+
+## Security Guidelines
+
+- **Never log passwords** or sensitive credentials
+- **Read-only operations** only on target systems
+- **No data exfiltration** - metadata reports only
+- **Secure defaults** - recommend key-based auth
+- **Audit trail** - all SSH sessions logged on target
+
+## Troubleshooting Development Issues
+
+### Tests Failing
+```bash
+# Run specific test
+pytest tests/test_linux_health.py::TestCheckDiskUsage -v
+
+# Show full output
+pytest tests/ -vv --tb=long -s
+```
+
+### Docker Build Issues
+```bash
+# Clear build cache
+docker builder prune --all
+
+# Build with verbose output
+docker build -t linux-health:dev . --progress=plain --no-cache
+```
+
+### Import Errors
+```bash
+# Verify environment
+which python
+pip list
+
+# Reinstall dependencies
+pip install -r requirements.txt --force-reinstall
+```
+
+## Release Process
+
+1. Update version in `linux_health/__init__.py`
+2. Update CHANGELOG in README.md
+3. Run full test suite
+4. Build Docker image with version tag
+5. Tag git commit: `git tag -a v1.x.x -m "Release v1.x.x"`
+6. Push: `git push origin main --tags`
+
+## Contact
+
+For questions or contributions, refer to README.md support section.
 - Work through each checklist item systematically.
 - Keep communication concise and focused.
 - Follow development best practices.

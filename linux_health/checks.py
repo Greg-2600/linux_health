@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import dataclass
 from typing import List, Tuple
 
 from .ssh_client import SSHSession
+
+COMMAND_TIMEOUT: float = 60.0
+
+
+def set_command_timeout(seconds: float) -> None:
+    """Set global per-command timeout for remote SSH execs."""
+    global COMMAND_TIMEOUT
+    COMMAND_TIMEOUT = max(1.0, seconds)
 
 
 @dataclass
@@ -43,8 +52,13 @@ class DetailedSecurityInfo:
     unused_packages: str | None = None
 
 
-def _run(ssh: SSHSession, command: str, password: str = "") -> Tuple[int, str, str]:
-    """Run command on SSH session, optionally providing password to stdin for sudo -S."""
+def _run(
+    ssh: SSHSession,
+    command: str,
+    password: str = "",
+    command_timeout: float | None = None,
+) -> Tuple[int, str, str]:
+    """Run command on SSH session with a hard timeout, sending sudo password when needed."""
     # Check if this is a mock object (for testing)
     if (
         hasattr(ssh, "_client")
@@ -52,7 +66,10 @@ def _run(ssh: SSHSession, command: str, password: str = "") -> Tuple[int, str, s
         and not isinstance(ssh._client, type(None))
     ):
         try:
-            stdin, stdout, stderr = ssh._client.exec_command(command, timeout=10.0)
+            effective_timeout = command_timeout or COMMAND_TIMEOUT
+            stdin, stdout, stderr = ssh._client.exec_command(
+                command, timeout=effective_timeout
+            )
 
             # If password provided and command uses sudo -S, write password to stdin
             if password and "sudo -S" in command:
@@ -60,16 +77,24 @@ def _run(ssh: SSHSession, command: str, password: str = "") -> Tuple[int, str, s
                 stdin.flush()
 
             stdin.close()
+
+            deadline = time.monotonic() + effective_timeout
+            while not stdout.channel.exit_status_ready():
+                if time.monotonic() > deadline:
+                    stdout.channel.close()
+                    return -1, "", f"command timeout after {effective_timeout}s"
+                time.sleep(0.1)
+
             exit_status = stdout.channel.recv_exit_status()
             out = stdout.read().decode("utf-8", errors="replace").strip()
             err = stderr.read().decode("utf-8", errors="replace").strip()
             return exit_status, out, err
         except (TypeError, AttributeError):
             # Fall back to using ssh.run() for mock objects
-            return ssh.run(command)
+            return ssh.run(command, timeout=effective_timeout)
     else:
         # Use the normal ssh.run() method
-        return ssh.run(command)
+        return ssh.run(command, timeout=effective_timeout)
 
 
 def gather_system_info(ssh: SSHSession) -> SystemInfo:

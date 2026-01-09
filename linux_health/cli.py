@@ -23,6 +23,7 @@ from .checks import (
     gather_rkhunter_scan,
     gather_unused_packages,
     DetailedSecurityInfo,
+    set_command_timeout,
 )
 from .report import render_report, render_report_text
 from .scanner import COMMON_PORTS, scan_ports
@@ -66,6 +67,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--timeout", type=float, default=5.0, help="SSH connect timeout seconds"
     )
     parser.add_argument(
+        "--command-timeout",
+        type=float,
+        default=60.0,
+        help="Per-command SSH execution timeout seconds",
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default=None,
@@ -103,6 +110,9 @@ def main(argv: list[str] | None = None) -> int:
     password = args.password
     if args.ask_password or password == "-":
         password = getpass.getpass("SSH password: ")
+
+    # Apply per-command timeout for all SSH execs
+    set_command_timeout(args.command_timeout)
 
     try:
         with SSHSession(

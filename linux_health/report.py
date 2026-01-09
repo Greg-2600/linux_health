@@ -67,7 +67,12 @@ def render_report_text(
 
     lines.append("HEALTH CHECKS")
     lines.append("-" * 80)
-    for check in checks_list:
+    # Sort by status: fail, warn, pass
+    status_order = {"fail": 0, "warn": 1, "pass": 2}
+    sorted_checks = sorted(
+        checks_list, key=lambda c: status_order.get(c.status.lower(), 3)
+    )
+    for check in sorted_checks:
         status_sym = STATUS_SYMBOL.get(check.status, "????")
         lines.append(f"{status_sym} {check.item:<25} | {check.category}")
         lines.append(f"    Details: {check.details}")
@@ -251,7 +256,12 @@ def render_report(
     lines.append("## Checklist")
     lines.append("| Status | Item | Details | Recommendation | Category |")
     lines.append("| --- | --- | --- | --- | --- |")
-    for check in checks_list:
+    # Sort by status: fail, warn, pass
+    status_order = {"fail": 0, "warn": 1, "pass": 2}
+    sorted_checks = sorted(
+        checks_list, key=lambda c: status_order.get(c.status.lower(), 3)
+    )
+    for check in sorted_checks:
         lines.append(
             f"| {_status_icon(check.status)} {check.status.upper()} | {check.item} | {check.details} | {check.recommendation} | {check.category} |"
         )
