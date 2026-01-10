@@ -1,15 +1,74 @@
-# Utility Scripts
+# 🛠️ Development & Testing Scripts
 
-Development and testing utilities for Linux Health Security Scanner.
+This directory contains utility scripts for Linux Health Security Scanner development and testing.
 
-## Scripts
+## Scripts Overview
 
 ### add_test_ids.py
-Utility script for adding Lynis-compatible test IDs to security checks.
+**Purpose:** Utility script for managing and adding Lynis-compatible test IDs to security checks.
+
+**Usage:**
+```bash
+python scripts/add_test_ids.py [options]
+```
+
+**Features:**
+- Add test IDs to checks in bulk
+- Validate test ID format
+- Generate test ID mappings
+- For development purposes only
+
+**Requirements:** Python 3.11+
 
 ### test_json_output.py
-Testing script for validating JSON output format and structure.
+**Purpose:** Testing script for validating JSON output format and structure compliance.
 
-## Usage
+**Usage:**
+```bash
+python scripts/test_json_output.py [options]
+```
 
-These scripts are for development purposes only and are not required for normal operation of the scanner.
+**Features:**
+- Validate JSON output structure
+- Test JSON schema compliance
+- Verify required fields
+- Performance testing
+- For development/QA purposes only
+
+**Requirements:** Python 3.11+
+
+## Running During Development
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run specific script
+python scripts/add_test_ids.py
+
+# Run all development tests
+python scripts/test_json_output.py
+```
+
+## Integration with Main Tests
+
+These scripts are supplementary to the main test suite located in `/tests/`. For comprehensive testing, see:
+- **Unit Tests:** `pytest tests/`
+- **Code Quality:** `black --check linux_health/` and `ruff check linux_health/`
+- **Coverage:** `pytest tests/ --cov=linux_health`
+
+## Contributing
+
+When adding new scripts:
+1. Add docstrings explaining purpose and usage
+2. Include error handling
+3. Add to this README
+4. Ensure compatibility with Python 3.11+
+5. Follow Black and Pylint standards
+
+For contribution guidelines, see [../.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md)
+
+---
+
+**Note:** These scripts are development tools and are not required for normal operation of the Linux Health Security Scanner.
+
