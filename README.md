@@ -220,6 +220,10 @@ This project was inspired by **Lynis** and implements many of its core security 
 git clone https://github.com/yourusername/linux_health.git
 cd linux_health
 
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
+
 # Install dependencies
 pip install -r requirements.txt
 
@@ -287,8 +291,8 @@ git clone https://github.com/yourusername/linux_health.git
 cd linux_health
 
 # Create isolated environment
-python3.11 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
 
 # Install runtime dependencies
 pip install -r requirements.txt
@@ -1281,8 +1285,8 @@ git clone https://github.com/yourusername/linux_health.git
 cd linux_health
 
 # Create isolated environment
-python3.11 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
 
 # Install all dependencies
 pip install -r requirements.txt
