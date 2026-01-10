@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Iterable, Any
+from typing import Any, Iterable
 
-from .checks import CheckResult, SystemInfo, DetailedSecurityInfo
+from .checks import CheckResult, DetailedSecurityInfo, SystemInfo
 from .scanner import PortStatus
 
 STATUS_ICON = {

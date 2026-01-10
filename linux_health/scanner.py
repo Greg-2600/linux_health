@@ -1,3 +1,22 @@
+"""Concurrent port scanner for non-invasive service detection.
+
+Provides TCP connect-based port scanning using concurrent threads to efficiently
+probe common service ports on target systems. Results are deterministic and
+orderable by port number.
+
+Classes:
+    PortStatus: Dataclass representing a single port scan result
+
+Functions:
+    scan_ports: Scan multiple ports concurrently with configurable timeout
+    _scan_single: Internal function for single port scanning
+
+Example:
+    >>> results = scan_ports('192.168.1.100', [22, 80, 443])
+    >>> open_ports = [r.port for r in results if r.open]
+    >>> print(f'Open ports: {open_ports}')
+"""
+
 from __future__ import annotations
 
 import socket
@@ -41,6 +60,20 @@ class PortStatus:
 
 
 def _scan_single(host: str, port: int, timeout: float) -> PortStatus:
+    """Probe single port on target host using TCP connect.
+
+    Args:
+        host: Target hostname or IP address
+        port: Port number (1-65535)
+        timeout: Connection timeout in seconds
+
+    Returns:
+        PortStatus with open flag and diagnostic reason
+
+    Note:
+        Uses socket.SOCK_STREAM (TCP) for connect-based scanning.
+        Handles all exceptions gracefully for robust concurrent execution.
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(timeout)
         try:
@@ -55,6 +88,31 @@ def _scan_single(host: str, port: int, timeout: float) -> PortStatus:
 def scan_ports(
     host: str, ports: Iterable[int], timeout: float = 0.7, max_workers: int = 50
 ) -> List[PortStatus]:
+    """Scan multiple ports concurrently on target host.
+
+    Efficiently probes target system using concurrent TCP connect attempts.
+    Results are sorted by port number and include diagnostic failure reasons.
+
+    Args:
+        host: Target hostname or IP address
+        ports: Iterable of port numbers to scan (duplicates removed)
+        timeout: Per-port connection timeout in seconds (default: 0.7)
+        max_workers: Maximum concurrent threads (default: 50)
+
+    Returns:
+        List of PortStatus objects sorted by port number
+
+    Performance:
+        - 25 ports with 50 workers: ~1-3 seconds (typical)
+        - Linear with timeout, sublinear with port count
+        - Network limited, not CPU limited
+
+    Example:
+        >>> results = scan_ports('target.example.com', [22, 80, 443, 3306])
+        >>> for r in results:
+        ...     status = 'OPEN' if r.open else 'CLOSED'
+        ...     print(f':{r.port} {status}')
+    """
     unique_ports = sorted({int(p) for p in ports if int(p) > 0})
     results: list[PortStatus] = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:

@@ -1,31 +1,31 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import sys
 from pathlib import Path
-import getpass
 
 from .checks import (
-    gather_system_info,
-    run_all_checks,
-    gather_suid_binaries,
-    gather_root_logins,
-    gather_successful_ssh_logins,
-    gather_failed_ssh_logins,
-    gather_top_processes,
-    gather_disk_usage_dirs,
-    gather_available_updates,
-    gather_firewall_rules,
-    gather_sshd_config_check,
-    gather_failed_systemd_units,
-    gather_sudoers_info,
-    gather_critical_file_permissions,
-    gather_rkhunter_scan,
-    gather_unused_packages,
     DetailedSecurityInfo,
+    gather_available_updates,
+    gather_critical_file_permissions,
+    gather_disk_usage_dirs,
+    gather_failed_ssh_logins,
+    gather_failed_systemd_units,
+    gather_firewall_rules,
+    gather_rkhunter_scan,
+    gather_root_logins,
+    gather_sshd_config_check,
+    gather_successful_ssh_logins,
+    gather_sudoers_info,
+    gather_suid_binaries,
+    gather_system_info,
+    gather_top_processes,
+    gather_unused_packages,
+    run_all_checks,
     set_command_timeout,
 )
-from .report import render_report, render_report_text, render_report_json
+from .report import render_report, render_report_json, render_report_text
 from .scanner import COMMON_PORTS, scan_ports
 from .ssh_client import SSHSession
 
