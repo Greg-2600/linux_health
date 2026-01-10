@@ -68,7 +68,9 @@ def calculate_hardening_index(checks: Iterable[CheckResult]) -> dict[str, Any]:
     for cat, stats in categories.items():
         cat_weighted = (stats["pass"] * 100) + (stats["warn"] * 50)
         cat_max = stats["total"] * 100
-        categories[cat]["index"] = int((cat_weighted / cat_max * 100)) if cat_max > 0 else 0
+        categories[cat]["index"] = (
+            int((cat_weighted / cat_max * 100)) if cat_max > 0 else 0
+        )
 
     return {
         "overall_index": overall_index,
@@ -137,7 +139,9 @@ def render_report_text(
     lines.append(f"  ⚠️  Warnings:   {warned}")
     lines.append(f"  ❌ Failed:     {failed}")
     lines.append("")
-    lines.append(f"  HARDENING INDEX: {hardening['overall_index']}/100 {level_icon} ({level})")
+    lines.append(
+        f"  HARDENING INDEX: {hardening['overall_index']}/100 {level_icon} ({level})"
+    )
     open_ports = [p.port for p in ports_list if p.open]
     ports_info = f"({', '.join(map(str, open_ports))})" if open_ports else "(none)"
     lines.append(f"  Open Ports:    {len(open_ports)} {ports_info}\n")
@@ -146,12 +150,9 @@ def render_report_text(
     lines.append("HARDENING BY CATEGORY")
     lines.append("-" * 80)
     # Sort categories by index (worst first)
-    sorted_cats = sorted(
-        hardening["categories"].items(),
-        key=lambda x: x[1]["index"]
-    )
+    sorted_cats = sorted(hardening["categories"].items(), key=lambda x: x[1]["index"])
     for cat, stats in sorted_cats:
-        cat_level, cat_icon = get_hardening_level(stats["index"])
+        _, cat_icon = get_hardening_level(stats["index"])
         lines.append(
             f"  {cat_icon} {stats['index']:3d}/100  {cat:<25} "
             f"(✅{stats['pass']} ⚠️{stats['warn']} ❌{stats['fail']})"
@@ -344,7 +345,9 @@ def render_report(
 
     lines.append("## Summary")
     lines.append(f"- Checks: {total} (✅ {passed} / ⚠️ {warned} / ❌ {failed})")
-    lines.append(f"- **Hardening Index: {hardening['overall_index']}/100** {level_icon} **({level})**")
+    lines.append(
+        f"- **Hardening Index: {hardening['overall_index']}/100** {level_icon} **({level})**"
+    )
     open_ports = [p.port for p in ports_list if p.open]
     lines.append(
         f"- Open ports (scanned): {len(open_ports)} -> {', '.join(map(str, open_ports)) if open_ports else 'none'}"
@@ -357,12 +360,9 @@ def render_report(
     lines.append("| Category | Index | Passed | Warned | Failed |")
     lines.append("| --- | --- | --- | --- | --- |")
     # Sort categories by index (worst first)
-    sorted_cats = sorted(
-        hardening["categories"].items(),
-        key=lambda x: x[1]["index"]
-    )
+    sorted_cats = sorted(hardening["categories"].items(), key=lambda x: x[1]["index"])
     for cat, stats in sorted_cats:
-        cat_level, cat_icon = get_hardening_level(stats["index"])
+        _, cat_icon = get_hardening_level(stats["index"])
         lines.append(
             f"| {cat} | {cat_icon} {stats['index']}/100 | "
             f"{stats['pass']} | {stats['warn']} | {stats['fail']} |"
@@ -532,12 +532,9 @@ def render_report_json(
             "scanned": len(ports_list),
             "open": len([p for p in ports_list if p.open]),
             "open_ports": [
-                {
-                    "port": p.port,
-                    "state": "open",
-                    "reason": p.reason or ""
-                }
-                for p in ports_list if p.open
+                {"port": p.port, "state": "open", "reason": p.reason or ""}
+                for p in ports_list
+                if p.open
             ],
         },
     }
@@ -556,14 +553,16 @@ def render_report_json(
 
     # Add check results
     for check in checks_list:
-        report["checks"].append({
-            "test_id": check.test_id,
-            "category": check.category,
-            "item": check.item,
-            "status": check.status,
-            "details": check.details,
-            "recommendation": check.recommendation,
-        })
+        report["checks"].append(
+            {
+                "test_id": check.test_id,
+                "category": check.category,
+                "item": check.item,
+                "status": check.status,
+                "details": check.details,
+                "recommendation": check.recommendation,
+            }
+        )
 
     # Add detailed info if available
     if detailed:
