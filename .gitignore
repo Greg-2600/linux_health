@@ -55,7 +55,6 @@ env.bak/
 venv.bak/
 
 # IDE & Editor
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -66,8 +65,11 @@ venv.bak/
 # Project specific
 scan_report.md
 scan_report.txt
+scan.md
 credentials.txt
 .secrets/
+PR_DESCRIPTION.md
+coverage.json
 
 # Docker
 docker-compose.override.yml
