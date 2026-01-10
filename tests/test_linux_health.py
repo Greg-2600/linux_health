@@ -1,34 +1,36 @@
-import pytest
-from unittest.mock import Mock, MagicMock
-from linux_health.checks import (
-    CheckResult,
-    SystemInfo,
-    DetailedSecurityInfo,
-    gather_system_info,
-    run_all_checks,
-    gather_rkhunter_scan,
-    gather_unused_packages,
-    check_suspicious_network_connections,
-    check_hidden_files_in_system_dirs,
-    check_kernel_module_integrity,
-    check_active_reverse_shells,
-    check_weak_password_policy,
-    check_container_escape_indicators,
-    check_arp_spoofing,
-    check_dns_tampering,
-    check_crypto_miners,
-    check_file_integrity_critical_binaries,
-    check_log_tampering,
-    check_privilege_escalation_vectors,
-    check_world_writable_system_files,
-    check_deleted_file_handles,
-)
-from linux_health.cli import parse_ports, build_parser
-from linux_health.scanner import COMMON_PORTS, PortStatus
-from linux_health.report import render_report_text, render_report, render_report_json
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, Mock
+
+import pytest
+
+from linux_health.checks import (
+    CheckResult,
+    DetailedSecurityInfo,
+    SystemInfo,
+    check_active_reverse_shells,
+    check_arp_spoofing,
+    check_container_escape_indicators,
+    check_crypto_miners,
+    check_deleted_file_handles,
+    check_dns_tampering,
+    check_file_integrity_critical_binaries,
+    check_hidden_files_in_system_dirs,
+    check_kernel_module_integrity,
+    check_log_tampering,
+    check_privilege_escalation_vectors,
+    check_suspicious_network_connections,
+    check_weak_password_policy,
+    check_world_writable_system_files,
+    gather_rkhunter_scan,
+    gather_system_info,
+    gather_unused_packages,
+    run_all_checks,
+)
+from linux_health.cli import build_parser, parse_ports
+from linux_health.report import render_report, render_report_json, render_report_text
+from linux_health.scanner import COMMON_PORTS, PortStatus
 
 
 class TestParsePortsUtil:
@@ -656,8 +658,9 @@ class TestCheckRecentlyCreatedAccounts:
 
     def test_recent_account_detected(self):
         """Test detection of recently created account"""
-        from linux_health.checks import check_recently_created_accounts
         from datetime import datetime, timedelta
+
+        from linux_health.checks import check_recently_created_accounts
 
         now = datetime.now()
         recent_date = now - timedelta(days=5)
@@ -673,8 +676,9 @@ class TestCheckRecentlyCreatedAccounts:
 
     def test_old_account_returns_pass(self):
         """Test that old accounts return pass"""
-        from linux_health.checks import check_recently_created_accounts
         from datetime import datetime, timedelta
+
+        from linux_health.checks import check_recently_created_accounts
 
         now = datetime.now()
         old_date = now - timedelta(days=90)
@@ -1122,8 +1126,9 @@ class TestSSHSession:
 
     def test_ssh_session_context_manager(self):
         """Test SSH session context manager protocol"""
+        from unittest.mock import MagicMock, patch
+
         from linux_health.ssh_client import SSHSession
-        from unittest.mock import patch, MagicMock
 
         with patch("linux_health.ssh_client.paramiko.SSHClient") as mock_client_class:
             mock_client = MagicMock()
@@ -1137,8 +1142,9 @@ class TestSSHSession:
 
     def test_ssh_session_run_command(self):
         """Test running SSH commands"""
+        from unittest.mock import MagicMock, patch
+
         from linux_health.ssh_client import SSHSession
-        from unittest.mock import patch, MagicMock
 
         with patch("linux_health.ssh_client.paramiko.SSHClient") as mock_client_class:
             mock_client = MagicMock()
@@ -1180,8 +1186,9 @@ class TestPortScanner:
 
     def test_scan_single_port_open(self):
         """Test scanning a single open port"""
+        from unittest.mock import MagicMock, patch
+
         from linux_health.scanner import _scan_single
-        from unittest.mock import patch, MagicMock
 
         with patch("linux_health.scanner.socket.socket") as mock_socket_class:
             mock_socket = MagicMock()
@@ -1196,9 +1203,10 @@ class TestPortScanner:
 
     def test_scan_single_port_timeout(self):
         """Test scanning a port that times out"""
-        from linux_health.scanner import _scan_single
-        from unittest.mock import patch, MagicMock
         import socket
+        from unittest.mock import MagicMock, patch
+
+        from linux_health.scanner import _scan_single
 
         with patch("linux_health.scanner.socket.socket") as mock_socket_class:
             mock_socket = MagicMock()
@@ -1213,8 +1221,9 @@ class TestPortScanner:
 
     def test_scan_single_port_connection_refused(self):
         """Test scanning a port with connection refused"""
+        from unittest.mock import MagicMock, patch
+
         from linux_health.scanner import _scan_single
-        from unittest.mock import patch, MagicMock
 
         with patch("linux_health.scanner.socket.socket") as mock_socket_class:
             mock_socket = MagicMock()
@@ -1229,8 +1238,9 @@ class TestPortScanner:
 
     def test_scan_ports_deduplicates(self):
         """Test that port scanning deduplicates ports"""
-        from linux_health.scanner import scan_ports
         from unittest.mock import patch
+
+        from linux_health.scanner import scan_ports
 
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
@@ -1245,8 +1255,9 @@ class TestPortScanner:
 
     def test_scan_ports_filters_invalid(self):
         """Test that invalid ports are filtered"""
-        from linux_health.scanner import scan_ports
         from unittest.mock import patch
+
+        from linux_health.scanner import scan_ports
 
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
@@ -1449,7 +1460,7 @@ class TestCommandTimeout:
 
     def test_set_command_timeout(self):
         """Test setting command timeout"""
-        from linux_health.checks import set_command_timeout, COMMAND_TIMEOUT
+        from linux_health.checks import COMMAND_TIMEOUT, set_command_timeout
 
         set_command_timeout(120.0)
 
