@@ -163,6 +163,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # Apply per-command timeout for all SSH execs
     set_command_timeout(args.command_timeout)
+    
+    # Reset command cache for fresh scan results
+    from .checks import reset_command_cache
+    reset_command_cache()
 
     try:
         with SSHSession(
