@@ -1815,5 +1815,274 @@ class TestCheckResultWithTestID:
         assert result.test_id == ""
 
 
+class TestHardeningIndex:
+    """Tests for hardening index calculation"""
+
+    def test_calculate_hardening_index_all_pass(self):
+        """Test hardening index when all checks pass"""
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Check 1",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+            CheckResult(
+                category="Security",
+                item="Check 2",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+        ]
+        from linux_health.report import calculate_hardening_index
+
+        index = calculate_hardening_index(checks)
+        assert index["overall_index"] == 100
+
+    def test_calculate_hardening_index_with_warnings(self):
+        """Test hardening index with warnings"""
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Check 1",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+            CheckResult(
+                category="Security",
+                item="Check 2",
+                status="warn",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+        ]
+        from linux_health.report import calculate_hardening_index
+
+        index = calculate_hardening_index(checks)
+        # 1 pass (100%) + 1 warn (50%) = 75%
+        assert index["overall_index"] == 75
+
+    def test_calculate_hardening_index_with_failures(self):
+        """Test hardening index with failures"""
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Check 1",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+            CheckResult(
+                category="Security",
+                item="Check 2",
+                status="fail",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+        ]
+        from linux_health.report import calculate_hardening_index
+
+        index = calculate_hardening_index(checks)
+        # 1 pass (100%) + 1 fail (0%) = 50%
+        assert index["overall_index"] == 50
+
+
+class TestProfileLoading:
+    """Tests for profile loading functionality"""
+
+    def test_load_nonexistent_profile_raises_error(self):
+        """Test that loading nonexistent profile raises error"""
+        from linux_health.config import load_profile
+
+        with pytest.raises(FileNotFoundError):
+            load_profile("/nonexistent/profile.yaml")
+
+    def test_load_profile_with_invalid_yaml_fails_gracefully(self):
+        """Test that invalid YAML is handled properly"""
+        from linux_health.config import load_profile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("invalid: [yaml content\n")
+            f.flush()
+            temp_path = f.name
+
+        try:
+            with pytest.raises(Exception):
+                load_profile(temp_path)
+        finally:
+            Path(temp_path).unlink()
+
+    def test_create_default_profile(self):
+        """Test creating default profile"""
+        from linux_health.config import create_default_profile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "default.yaml"
+            create_default_profile(str(output_path))
+            assert output_path.exists()
+            content = output_path.read_text(encoding="utf-8")
+            assert "skip_tests:" in content or "only_tests:" in content
+
+
+class TestSystemInfoGathering:
+    """Tests for system information gathering"""
+
+    def test_system_info_structure(self):
+        """Test that SystemInfo has required fields"""
+        system_info = SystemInfo(
+            hostname="test-host",
+            os="Linux",
+            kernel="5.10.0",
+            uptime="10 days",
+            users="2 users",
+        )
+        assert system_info.hostname == "test-host"
+        assert system_info.os == "Linux"
+        assert system_info.kernel == "5.10.0"
+        assert system_info.uptime == "10 days"
+        assert system_info.users == "2 users"
+
+
+class TestJSONReportValidation:
+    """Tests for JSON report structure and validation"""
+
+    def test_json_report_structure(self):
+        """Test that JSON report has required structure"""
+        system_info = SystemInfo(
+            hostname="test-host",
+            os="Linux",
+            kernel="5.10.0",
+            uptime="10 days",
+            users="2 users",
+        )
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Test Check",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+                test_id="TEST-001",
+            ),
+        ]
+
+        report = render_report_json(
+            system_info,
+            checks,
+            [],
+        )
+
+        data = json.loads(report)
+        assert "scan_info" in data
+        assert "system" in data
+        assert "summary" in data
+        assert "checks" in data
+
+    def test_json_report_checks_contain_test_ids(self):
+        """Test that checks in JSON report include test IDs"""
+        system_info = SystemInfo(
+            hostname="test-host",
+            os="Linux",
+            kernel="5.10.0",
+            uptime="10 days",
+            users="2 users",
+        )
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Test Check",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+                test_id="AUTH-9328",
+            ),
+        ]
+
+        report = render_report_json(
+            system_info,
+            checks,
+            [],
+        )
+
+        data = json.loads(report)
+        assert len(data["checks"]) > 0
+        assert "test_id" in data["checks"][0]
+
+    def test_json_report_has_hardening_summary(self):
+        """Test that JSON report includes hardening summary"""
+        system_info = SystemInfo(
+            hostname="test-host",
+            os="Linux",
+            kernel="5.10.0",
+            uptime="10 days",
+            users="2 users",
+        )
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Test Check",
+                status="pass",
+                details="Details",
+                recommendation="Recommendation",
+            ),
+        ]
+
+        report = render_report_json(
+            system_info,
+            checks,
+            [],
+        )
+
+        data = json.loads(report)
+        assert "summary" in data
+        assert "total_checks" in data["summary"]
+        assert "passed" in data["summary"]
+
+
+class TestErrorHandling:
+    """Tests for error handling in critical functions"""
+
+    def test_check_result_creation_with_defaults(self):
+        """Test creating CheckResult with default values"""
+        result = CheckResult(
+            category="Security",
+            item="Test Check",
+            status="pass",
+            details="Details",
+            recommendation="Recommendation",
+        )
+        assert result.status == "pass"
+        assert result.test_id == ""
+
+    def test_text_report_rendering(self):
+        """Test basic text report rendering"""
+        system_info = SystemInfo(
+            hostname="test-host",
+            os="Linux",
+            kernel="5.10.0",
+            uptime="10 days",
+            users="2 users",
+        )
+        checks = [
+            CheckResult(
+                category="Security",
+                item="Test Check",
+                status="pass",
+                details="All good",
+                recommendation="Keep monitoring",
+            ),
+        ]
+
+        # render_report returns a single string
+        text_output = render_report(system_info, checks, [])
+        assert isinstance(text_output, str)
+        assert len(text_output) > 0
+        assert "test-host" in text_output or "Security" in text_output
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
