@@ -1,3 +1,9 @@
+"""Report rendering and formatting for security scan results.
+
+Provides multiple output formats (text, markdown, JSON) for scan results,
+including hardening index calculation and category-based organization.
+"""
+
 from __future__ import annotations
 
 import json
@@ -68,9 +74,7 @@ def calculate_hardening_index(checks: Iterable[CheckResult]) -> dict[str, Any]:
     for cat, stats in categories.items():
         cat_weighted = (stats["pass"] * 100) + (stats["warn"] * 50)
         cat_max = stats["total"] * 100
-        categories[cat]["index"] = (
-            int((cat_weighted / cat_max * 100)) if cat_max > 0 else 0
-        )
+        stats["index"] = int((cat_weighted / cat_max * 100)) if cat_max > 0 else 0
 
     return {
         "overall_index": overall_index,
@@ -86,14 +90,13 @@ def get_hardening_level(index: int) -> tuple[str, str]:
     """Get hardening level and color based on index score."""
     if index >= 90:
         return ("EXCELLENT", "🟢")
-    elif index >= 75:
+    if index >= 75:
         return ("GOOD", "🟡")
-    elif index >= 60:
+    if index >= 60:
         return ("FAIR", "🟠")
-    elif index >= 40:
+    if index >= 40:
         return ("POOR", "🔴")
-    else:
-        return ("CRITICAL", "🔴🔴")
+    return ("CRITICAL", "🔴🔴")
 
 
 def render_report_text(
@@ -253,7 +256,8 @@ def render_report_text(
                 lines.append(f"  {line}")
             if len(detailed.unused_packages.splitlines()) > 30:
                 lines.append(
-                    f"  ... (showing first 30 of {len(detailed.unused_packages.splitlines())} lines)"
+                    f"  ... (showing first 30 of "
+                    f"{len(detailed.unused_packages.splitlines())} lines)"
                 )
             lines.append("")
 
@@ -317,6 +321,20 @@ def render_report(
     ports: Iterable[PortStatus],
     detailed: DetailedSecurityInfo | None = None,
 ) -> str:
+    """Render comprehensive security report in multiple formats.
+    
+    Orchestrates rendering based on format selection, delegating to
+    format-specific functions (text, markdown, JSON).
+    
+    Args:
+        system: System information from target
+        checks: Security check results
+        ports: Port scan results
+        detailed: Optional detailed security information
+        
+    Returns:
+        Formatted report string
+    """
     checks_list = list(checks)
     ports_list = list(ports)
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -349,9 +367,8 @@ def render_report(
         f"- **Hardening Index: {hardening['overall_index']}/100** {level_icon} **({level})**"
     )
     open_ports = [p.port for p in ports_list if p.open]
-    lines.append(
-        f"- Open ports (scanned): {len(open_ports)} -> {', '.join(map(str, open_ports)) if open_ports else 'none'}"
-    )
+    open_str = ", ".join(map(str, open_ports)) if open_ports else "none"
+    lines.append(f"- Open ports (scanned): {len(open_ports)} -> {open_str}")
     lines.append("")
 
     # Add category breakdown
@@ -378,8 +395,11 @@ def render_report(
         checks_list, key=lambda c: status_order.get(c.status.lower(), 3)
     )
     for check in sorted_checks:
+        icon = _status_icon(check.status)
+        status = check.status.upper()
         lines.append(
-            f"| {_status_icon(check.status)} {check.status.upper()} | {check.item} | {check.details} | {check.recommendation} | {check.category} |"
+            f"| {icon} {status} | {check.item} | {check.details} | "
+            f"{check.recommendation} | {check.category} |"
         )
     lines.append("")
 
@@ -388,9 +408,8 @@ def render_report(
     lines.append("| --- | --- | --- |")
     open_only = [p for p in ports_list if p.open]
     if not open_only:
-        lines.append(
-            "| none | closed/filtered | No open ports found (all scanned ports were closed/filtered) |"
-        )
+        msg = "No open ports found (all scanned ports were closed/filtered)"
+        lines.append(f"| none | closed/filtered | {msg} |")
     else:
         for port in open_only:
             lines.append(f"| {port.port} | open | {port.reason or ''} |")
@@ -483,9 +502,11 @@ def render_report(
         "- SSH hardening: edit `/etc/ssh/sshd_config` then `sudo systemctl reload sshd`"
     )
     lines.append("")
-    lines.append(
-        "Notes: Port scan is TCP connect scan on provided/common ports; results may be filtered by firewalls."
+    notes = (
+        "Notes: Port scan is TCP connect scan on provided/common ports; "
+        "results may be filtered by firewalls."
     )
+    lines.append(notes)
     return "\n".join(lines)
 
 

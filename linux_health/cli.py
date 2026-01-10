@@ -1,3 +1,9 @@
+"""Command-line interface for Linux Health Security Scanner.
+
+Provides argument parsing, SSH session management, and report orchestration
+for security scanning of Linux systems over SSH.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -38,6 +44,17 @@ except ImportError:
 
 
 def parse_ports(raw: str | None) -> list[int]:
+    """Parse comma-separated port list or return common ports.
+    
+    Args:
+        raw: Comma-separated port string or None
+        
+    Returns:
+        List of port integers, or COMMON_PORTS if empty
+        
+    Raises:
+        argparse.ArgumentTypeError: If any port is not a valid integer
+    """
     if not raw:
         return COMMON_PORTS
     ports: list[int] = []
@@ -49,12 +66,15 @@ def parse_ports(raw: str | None) -> list[int]:
             ports.append(int(part))
         except ValueError as exc:
             raise argparse.ArgumentTypeError(f"Invalid port: {part}") from exc
-    if not ports:
-        return COMMON_PORTS
-    return ports
+    return ports if ports else COMMON_PORTS
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return argument parser for CLI.
+    
+    Returns:
+        Configured argparse.ArgumentParser instance
+    """
     parser = argparse.ArgumentParser(description="Linux host health checker over SSH")
     parser.add_argument("hostname", help="Target host")
     parser.add_argument("username", help="SSH username")
@@ -116,6 +136,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Execute the security scan orchestration from CLI arguments.
+    
+    Args:
+        argv: Command-line arguments (defaults to sys.argv[1:] if None)
+        
+    Returns:
+        Exit code (0 for success, 1 for errors)
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
     ports = parse_ports(args.scan_ports)
@@ -130,7 +158,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             profile = load_profile(args.profile)
             print(f"Loaded scan profile from {args.profile}")
-        except Exception as e:
+        except (FileNotFoundError, ValueError) as e:
             print(f"Warning: Failed to load profile {args.profile}: {e}")
 
     # Apply per-command timeout for all SSH execs
@@ -202,8 +230,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Report written to {args.output}")
     else:
         # Print to stdout with UTF-8 encoding to handle Unicode characters on Windows
-        import sys
-
         sys.stdout.reconfigure(encoding="utf-8")
         print(report)
     return 0
