@@ -23,6 +23,7 @@ class CheckResult:
     status: str  # pass | warn | fail
     details: str
     recommendation: str
+    test_id: str = ""  # Lynis-style test ID (e.g., BOOT-5122, AUTH-9328)
 
 
 @dataclass
@@ -111,33 +112,36 @@ def gather_system_info(ssh: SSHSession) -> SystemInfo:
     )
 
 
-def _pass(item: str, details: str, recommendation: str, category: str) -> CheckResult:
+def _pass(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
         status="pass",
         details=details,
         recommendation=recommendation,
+        test_id=test_id,
     )
 
 
-def _warn(item: str, details: str, recommendation: str, category: str) -> CheckResult:
+def _warn(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
         status="warn",
         details=details,
         recommendation=recommendation,
+        test_id=test_id,
     )
 
 
-def _fail(item: str, details: str, recommendation: str, category: str) -> CheckResult:
+def _fail(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
         status="fail",
         details=details,
         recommendation=recommendation,
+        test_id=test_id,
     )
 
 
@@ -199,6 +203,7 @@ def check_memory(ssh: SSHSession) -> CheckResult:
             f"Only {avail_pct}% available ({avail} MiB of {total} MiB)",
             "Investigate heavy processes with 'ps aux --sort=-%mem | head', consider adding RAM or reducing caches",
             category,
+            test_id="MEM-2914",
         )
     if avail_pct < 20:
         return _warn(
@@ -206,12 +211,14 @@ def check_memory(ssh: SSHSession) -> CheckResult:
             f"{avail_pct}% available ({avail} MiB of {total} MiB)",
             "Check services for leaks and restart long-lived daemons if needed",
             category,
+            test_id="MEM-2914",
         )
     return _pass(
         "Memory",
         f"{avail_pct}% available ({avail} MiB of {total} MiB)",
         "No action",
         category,
+        test_id="MEM-2914",
     )
 
 
@@ -2379,6 +2386,793 @@ def check_deleted_file_handles(ssh: SSHSession) -> CheckResult:
     )
 
 
+def check_boot_loader_password(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check if GRUB bootloader has password protection."""
+    category = "Boot/Kernel"
+    cmd = (
+        "bash -lc 'if [ -f /boot/grub/grub.cfg ]; then "
+        "grep -E \"^password|^set superusers\" /boot/grub/grub.cfg 2>/dev/null; "
+        "elif [ -f /boot/grub2/grub.cfg ]; then "
+        "grep -E \"^password|^set superusers\" /boot/grub2/grub.cfg 2>/dev/null; "
+        "fi'"
+    )
+    if password:
+        cmd = f"sudo -S {cmd}"
+
+    code, out, err = _run(ssh, cmd, password)
+
+    if code != 0 or not out.strip():
+        return _warn(
+            "Bootloader password",
+            "GRUB bootloader has no password protection",
+            "Set GRUB password with 'grub-mkpasswd-pbkdf2' and configure in /etc/grub.d/40_custom",
+            category,
+        )
+
+    return _pass(
+        "Bootloader password",
+        "GRUB password protection enabled",
+        "No action",
+        category,
+    )
+
+
+def check_kernel_hardening(ssh: SSHSession) -> CheckResult:
+    """Check kernel security parameters (sysctl hardening)."""
+    category = "Boot/Kernel"
+
+    # Check critical security parameters
+    security_params = {
+        "kernel.dmesg_restrict": "1",
+        "kernel.kptr_restrict": "2",
+        "kernel.yama.ptrace_scope": "1",
+        "net.ipv4.conf.all.rp_filter": "1",
+        "net.ipv4.conf.default.rp_filter": "1",
+        "net.ipv4.conf.all.accept_source_route": "0",
+        "net.ipv4.conf.default.accept_source_route": "0",
+        "net.ipv4.conf.all.send_redirects": "0",
+        "net.ipv4.conf.default.send_redirects": "0",
+        "net.ipv4.icmp_echo_ignore_broadcasts": "1",
+        "net.ipv4.icmp_ignore_bogus_error_responses": "1",
+        "fs.suid_dumpable": "0",
+    }
+
+    cmd = "bash -lc 'sysctl " + " ".join(security_params.keys()) + " 2>/dev/null'"
+    code, out, err = _run(ssh, cmd)
+
+    if code != 0:
+        return _warn(
+            "Kernel hardening",
+            "sysctl not available or failed",
+            "Check kernel parameters manually",
+            category,
+        )
+
+    issues = []
+    for line in out.splitlines():
+        for param, expected in security_params.items():
+            if param in line:
+                parts = line.split("=")
+                if len(parts) == 2:
+                    actual = parts[1].strip()
+                    if actual != expected:
+                        issues.append(f"{param}={actual} (expected {expected})")
+
+    if issues:
+        return _warn(
+            "Kernel hardening",
+            f"Insecure kernel parameters: {', '.join(issues[:5])}",
+            "Configure hardening parameters in /etc/sysctl.conf or /etc/sysctl.d/",
+            category,
+        )
+
+    return _pass(
+        "Kernel hardening",
+        f"Critical kernel security parameters properly configured ({len(security_params)} checked)",
+        "No action",
+        category,
+    )
+
+
+def check_file_integrity_tools(ssh: SSHSession) -> CheckResult:
+    """Check for presence of file integrity monitoring tools (AIDE, Tripwire, OSSEC)."""
+    category = "System Integrity"
+
+    tools = ["aide", "tripwire", "ossec-control", "samhain"]
+    cmd = "bash -lc 'for tool in " + " ".join(tools) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+
+    code, out, err = _run(ssh, cmd)
+
+    if not out.strip():
+        return _warn(
+            "File integrity monitoring",
+            "No file integrity monitoring tool detected (AIDE, Tripwire, OSSEC, Samhain)",
+            "Install and configure AIDE: 'apt install aide && aideinit' or Tripwire",
+            category,
+        )
+
+    tools_found = out.strip().split("\n")
+    return _pass(
+        "File integrity monitoring",
+        f"Tools installed: {', '.join(tools_found)}",
+        "Ensure database is initialized and scheduled scans are configured",
+        category,
+    )
+
+
+def check_package_manager_security(ssh: SSHSession) -> CheckResult:
+    """Check package manager security (GPG verification, repository security)."""
+    category = "Package Management"
+
+    # Check APT GPG verification
+    cmd = (
+        "bash -lc 'if command -v apt-config >/dev/null 2>&1; then "
+        "apt-config dump | grep -E \"APT::Get::AllowUnauthenticated|Acquire::AllowInsecureRepositories\"; "
+        "elif command -v dnf >/dev/null 2>&1; then "
+        "grep -E \"^gpgcheck=\" /etc/dnf/dnf.conf /etc/yum.conf 2>/dev/null; "
+        "elif command -v yum >/dev/null 2>&1; then "
+        "grep -E \"^gpgcheck=\" /etc/yum.conf 2>/dev/null; "
+        "fi'"
+    )
+
+    code, out, err = _run(ssh, cmd)
+
+    issues = []
+    if "AllowUnauthenticated \"true\"" in out or "AllowInsecureRepositories \"true\"" in out:
+        issues.append("APT allows unauthenticated packages")
+
+    if "gpgcheck=0" in out:
+        issues.append("YUM/DNF GPG checking disabled")
+
+    if not out.strip():
+        # Default is usually secure, but check for unsigned packages
+        cmd2 = (
+            "bash -lc 'if command -v apt-key >/dev/null 2>&1; then "
+            "apt-key list 2>/dev/null | grep -c \"pub\"; fi'"
+        )
+        code2, out2, _ = _run(ssh, cmd2)
+        if code2 == 0 and out2.strip() == "0":
+            issues.append("No APT signing keys configured")
+
+    if issues:
+        return _warn(
+            "Package manager security",
+            f"Issues: {', '.join(issues)}",
+            "Enable GPG verification in package manager configuration",
+            category,
+        )
+
+    return _pass(
+        "Package manager security",
+        "Package manager GPG verification appears enabled",
+        "No action",
+        category,
+    )
+
+
+def check_logging_and_auditing(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check logging infrastructure (syslog, rsyslog, journald, auditd)."""
+    category = "Logging & Auditing"
+
+    # Check for logging daemons
+    cmd = (
+        "bash -lc 'ps aux | grep -E \"syslogd|rsyslogd|systemd-journald\" | grep -v grep | head -3'"
+    )
+    code, out, err = _run(ssh, cmd)
+
+    if not out.strip():
+        return _fail(
+            "Logging daemon",
+            "No active logging daemon detected",
+            "Install and enable rsyslog or configure systemd-journald",
+            category,
+        )
+
+    # Check auditd
+    cmd2 = "bash -lc 'systemctl is-active auditd 2>/dev/null || service auditd status 2>/dev/null'"
+    code2, out2, _ = _run(ssh, cmd2)
+
+    auditd_running = "active" in out2.lower() or "running" in out2.lower()
+
+    if not auditd_running:
+        return _warn(
+            "Logging daemon",
+            f"Logging active ({len(out.splitlines())} daemon(s)) but auditd not running",
+            "Install and enable auditd for enhanced security auditing: 'apt install auditd && systemctl enable --now auditd'",
+            category,
+        )
+
+    return _pass(
+        "Logging daemon",
+        f"Logging infrastructure operational (auditd: {'active' if auditd_running else 'inactive'})",
+        "Configure remote logging and log rotation",
+        category,
+    )
+
+
+def check_selinux_apparmor(ssh: SSHSession) -> CheckResult:
+    """Check Mandatory Access Control systems (SELinux, AppArmor)."""
+    category = "MAC Security"
+
+    # Check SELinux
+    cmd_selinux = "bash -lc 'command -v getenforce >/dev/null 2>&1 && getenforce'"
+    code_se, out_se, _ = _run(ssh, cmd_selinux)
+
+    # Check AppArmor
+    cmd_apparmor = "bash -lc 'command -v aa-status >/dev/null 2>&1 && aa-status --enabled 2>&1'"
+    code_aa, out_aa, _ = _run(ssh, cmd_apparmor)
+
+    selinux_enforcing = out_se.strip() == "Enforcing"
+    apparmor_enabled = code_aa == 0
+
+    if not selinux_enforcing and not apparmor_enabled:
+        return _warn(
+            "MAC system",
+            "No Mandatory Access Control system active (SELinux/AppArmor)",
+            "Enable SELinux (RHEL/CentOS) or AppArmor (Ubuntu/Debian) for enhanced security",
+            category,
+        )
+
+    if out_se.strip() == "Permissive":
+        return _warn(
+            "MAC system",
+            "SELinux in Permissive mode (not enforcing)",
+            "Set SELinux to Enforcing mode in /etc/selinux/config",
+            category,
+        )
+
+    status = []
+    if selinux_enforcing:
+        status.append("SELinux: Enforcing")
+    if apparmor_enabled:
+        status.append("AppArmor: Enabled")
+
+    return _pass(
+        "MAC system",
+        ", ".join(status),
+        "No action",
+        category,
+    )
+
+
+def check_security_tools(ssh: SSHSession) -> CheckResult:
+    """Detect presence of security tools (fail2ban, ClamAV, IDS/IPS)."""
+    category = "Security Tools"
+
+    tools = {
+        "fail2ban-client": "Fail2ban (brute-force protection)",
+        "clamscan": "ClamAV (antivirus)",
+        "snort": "Snort (IDS/IPS)",
+        "suricata": "Suricata (IDS/IPS)",
+        "rkhunter": "RKHunter (rootkit scanner)",
+        "chkrootkit": "chkrootkit (rootkit scanner)",
+    }
+
+    cmd = "bash -lc 'for tool in " + " ".join(tools.keys()) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    code, out, _ = _run(ssh, cmd)
+
+    found = []
+    for tool in out.strip().split("\n"):
+        if tool and tool in tools:
+            found.append(tools[tool])
+
+    if not found:
+        return _warn(
+            "Security tools",
+            "No additional security tools detected",
+            "Consider installing: fail2ban, ClamAV, rkhunter for enhanced security",
+            category,
+        )
+
+    return _pass(
+        "Security tools",
+        f"{len(found)} tool(s) installed: {', '.join(found)}",
+        "Ensure tools are configured and running",
+        category,
+    )
+
+
+def check_filesystem_mounts(ssh: SSHSession) -> CheckResult:
+    """Check filesystem mount options for security (noexec, nosuid, nodev)."""
+    category = "File System"
+
+    cmd = "bash -lc 'mount | grep -E \"^/dev|^tmpfs\"'"
+    code, out, err = _run(ssh, cmd)
+
+    if code != 0:
+        return _warn(
+            "Filesystem mounts",
+            "Failed to read mount points",
+            "Check mount manually",
+            category,
+        )
+
+    issues = []
+
+    # Check /tmp for noexec, nosuid, nodev
+    tmp_lines = [l for l in out.splitlines() if "/tmp" in l and "type tmpfs" in l]
+    if tmp_lines:
+        tmp_line = tmp_lines[0]
+        if "noexec" not in tmp_line:
+            issues.append("/tmp missing noexec")
+        if "nosuid" not in tmp_line:
+            issues.append("/tmp missing nosuid")
+        if "nodev" not in tmp_line:
+            issues.append("/tmp missing nodev")
+
+    # Check /var/tmp
+    var_tmp_lines = [l for l in out.splitlines() if "/var/tmp" in l]
+    if var_tmp_lines and "noexec" not in var_tmp_lines[0]:
+        issues.append("/var/tmp missing noexec")
+
+    # Check /dev/shm
+    shm_lines = [l for l in out.splitlines() if "/dev/shm" in l]
+    if shm_lines:
+        shm_line = shm_lines[0]
+        if "noexec" not in shm_line:
+            issues.append("/dev/shm missing noexec")
+        if "nosuid" not in shm_line:
+            issues.append("/dev/shm missing nosuid")
+
+    if issues:
+        return _warn(
+            "Filesystem mounts",
+            f"Insecure mount options: {', '.join(issues)}",
+            "Add noexec,nosuid,nodev to /tmp, /var/tmp, /dev/shm in /etc/fstab and remount",
+            category,
+        )
+
+    return _pass(
+        "Filesystem mounts",
+        "Critical filesystems have secure mount options",
+        "No action",
+        category,
+    )
+
+
+def check_shell_security(ssh: SSHSession) -> CheckResult:
+    """Check shell security settings (umask, TMOUT, history)."""
+    category = "Shell Security"
+
+    # Check default umask
+    cmd = "bash -lc 'umask'"
+    code, out, _ = _run(ssh, cmd)
+
+    issues = []
+
+    if code == 0 and out.strip():
+        umask_val = out.strip()
+        # Umask should be 027 or more restrictive (022 minimum)
+        if umask_val in ["0000", "0002", "000", "002"]:
+            issues.append(f"Weak umask: {umask_val} (should be 022 or 027)")
+
+    # Check for TMOUT in shell profiles
+    cmd2 = "bash -lc 'grep -h \"^TMOUT=\" /etc/profile /etc/bash.bashrc /etc/bashrc ~/.bashrc 2>/dev/null | head -1'"
+    code2, out2, _ = _run(ssh, cmd2)
+
+    if not out2.strip():
+        issues.append("No shell timeout (TMOUT) configured")
+
+    # Check command history settings
+    cmd3 = "bash -lc 'grep -h \"HISTFILESIZE\\|HISTSIZE\" /etc/profile /etc/bash.bashrc 2>/dev/null | head -2'"
+    code3, out3, _ = _run(ssh, cmd3)
+
+    if issues:
+        return _warn(
+            "Shell security",
+            f"Issues: {', '.join(issues)}",
+            "Set umask=027, TMOUT=900 in /etc/profile; configure HISTSIZE and HISTFILESIZE",
+            category,
+        )
+
+    return _pass(
+        "Shell security",
+        "Shell security settings appear reasonable",
+        "Review and standardize across all user profiles",
+        category,
+    )
+
+
+def check_compiler_presence(ssh: SSHSession) -> CheckResult:
+    """Check for presence of compilers on production systems."""
+    category = "System Tools"
+
+    compilers = ["gcc", "g++", "cc", "clang", "make"]
+    cmd = "bash -lc 'for tool in " + " ".join(compilers) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+
+    code, out, _ = _run(ssh, cmd)
+
+    if out.strip():
+        found = out.strip().split("\n")
+        return _warn(
+            "Compiler presence",
+            f"Compilers found on system: {', '.join(found)}",
+            "Consider removing compilers from production systems to reduce attack surface",
+            category,
+        )
+
+    return _pass(
+        "Compiler presence",
+        "No compilers detected",
+        "No action",
+        category,
+    )
+
+
+def check_legacy_services(ssh: SSHSession) -> CheckResult:
+    """Check for legacy/insecure services (telnet, rsh, ftp)."""
+    category = "Network Security"
+
+    legacy_services = ["telnetd", "rshd", "rlogind", "vsftpd", "proftpd"]
+    cmd = "bash -lc 'ps aux | grep -E \"" + "|".join(legacy_services) + "\" | grep -v grep'"
+
+    code, out, _ = _run(ssh, cmd)
+
+    if out.strip():
+        return _fail(
+            "Legacy services",
+            f"Insecure legacy services running: {out[:200]}",
+            "Disable telnet, rsh, rlogin, and use SSH instead; replace FTP with SFTP",
+            category,
+        )
+
+    return _pass(
+        "Legacy services",
+        "No legacy insecure services detected",
+        "No action",
+        category,
+    )
+
+
+def check_usb_storage(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check if USB storage is disabled."""
+    category = "Hardware Security"
+
+    cmd = (
+        "bash -lc 'lsmod | grep usb_storage || "
+        "grep -r \"install usb-storage /bin/true\" /etc/modprobe.d/ 2>/dev/null'"
+    )
+    if password:
+        cmd = f"sudo -S {cmd}"
+
+    code, out, _ = _run(ssh, cmd, password)
+
+    if "usb_storage" in out and "/bin/true" not in out:
+        return _warn(
+            "USB storage",
+            "USB storage module is loaded and not disabled",
+            "Disable USB storage by adding 'install usb-storage /bin/true' to /etc/modprobe.d/disable-usb-storage.conf",
+            category,
+        )
+
+    return _pass(
+        "USB storage",
+        "USB storage appears disabled or controlled",
+        "No action",
+        category,
+    )
+
+
+def check_web_server_security(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check web server security configuration (Apache, Nginx)."""
+    category = "Web Server"
+
+    # Check for running web servers
+    cmd = "bash -lc 'ps aux | grep -E \"httpd|apache2|nginx\" | grep -v grep | head -3'"
+    code, out, _ = _run(ssh, cmd)
+
+    if not out.strip():
+        return _pass(
+            "Web server",
+            "No web server detected",
+            "No action",
+            category,
+        )
+
+    issues = []
+    server_type = "apache" if "apache" in out.lower() or "httpd" in out else "nginx"
+
+    # Check Apache configuration
+    if server_type == "apache":
+        # Check ServerTokens
+        cmd2 = "bash -lc 'grep -r \"^ServerTokens\" /etc/apache2/ /etc/httpd/ 2>/dev/null | head -1'"
+        if password:
+            cmd2 = f"sudo -S {cmd2}"
+        code2, out2, _ = _run(ssh, cmd2, password)
+
+        if "Prod" not in out2:
+            issues.append("ServerTokens not set to Prod (exposes version)")
+
+        # Check ServerSignature
+        cmd3 = "bash -lc 'grep -r \"^ServerSignature\" /etc/apache2/ /etc/httpd/ 2>/dev/null | head -1'"
+        if password:
+            cmd3 = f"sudo -S {cmd3}"
+        code3, out3, _ = _run(ssh, cmd3, password)
+
+        if "Off" not in out3:
+            issues.append("ServerSignature not Off")
+
+    # Check Nginx configuration
+    elif server_type == "nginx":
+        cmd2 = "bash -lc 'grep -r \"server_tokens\" /etc/nginx/ 2>/dev/null | head -1'"
+        if password:
+            cmd2 = f"sudo -S {cmd2}"
+        code2, out2, _ = _run(ssh, cmd2, password)
+
+        if "off" not in out2.lower():
+            issues.append("server_tokens not disabled")
+
+    # Check for SSL/TLS
+    cmd_ssl = "bash -lc 'netstat -tlnp 2>/dev/null | grep :443 || ss -tlnp 2>/dev/null | grep :443'"
+    if password:
+        cmd_ssl = f"sudo -S {cmd_ssl}"
+    code_ssl, out_ssl, _ = _run(ssh, cmd_ssl, password)
+
+    if not out_ssl.strip():
+        issues.append("No HTTPS listener on port 443")
+
+    if issues:
+        return _warn(
+            "Web server",
+            f"{server_type.title()} issues: {', '.join(issues)}",
+            f"Harden {server_type} configuration: disable version disclosure, enable HTTPS",
+            category,
+        )
+
+    return _pass(
+        "Web server",
+        f"{server_type.title()} running with reasonable security settings",
+        "Review SSL/TLS ciphers and protocols",
+        category,
+    )
+
+
+def check_database_security(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check database server security (MySQL, PostgreSQL)."""
+    category = "Database"
+
+    # Check for running databases
+    cmd = "bash -lc 'ps aux | grep -E \"mysqld|mariadbd|postgres\" | grep -v grep | head -3'"
+    code, out, _ = _run(ssh, cmd)
+
+    if not out.strip():
+        return _pass(
+            "Database server",
+            "No database server detected",
+            "No action",
+            category,
+        )
+
+    issues = []
+    db_type = "mysql" if "mysql" in out.lower() or "mariadb" in out.lower() else "postgresql"
+
+    # Check MySQL/MariaDB
+    if db_type == "mysql":
+        # Check for anonymous users
+        cmd2 = "bash -lc 'mysql -e \"SELECT User,Host FROM mysql.user WHERE User=\\\"\\\" OR User IS NULL;\" 2>/dev/null | wc -l'"
+        code2, out2, _ = _run(ssh, cmd2)
+        if code2 == 0 and int(out2.strip() or "0") > 1:
+            issues.append("Anonymous MySQL users exist")
+
+        # Check for remote root
+        cmd3 = "bash -lc 'mysql -e \"SELECT User,Host FROM mysql.user WHERE User=\\\"root\\\" AND Host!=\\\"localhost\\\";\" 2>/dev/null | wc -l'"
+        code3, out3, _ = _run(ssh, cmd3)
+        if code3 == 0 and int(out3.strip() or "0") > 1:
+            issues.append("Remote root access enabled")
+
+    # Check PostgreSQL
+    elif db_type == "postgresql":
+        # Check pg_hba.conf for trust authentication
+        cmd2 = "bash -lc 'find /etc/postgresql -name pg_hba.conf -exec grep -v \"^#\" {} \\; 2>/dev/null | grep trust'"
+        if password:
+            cmd2 = f"sudo -S {cmd2}"
+        code2, out2, _ = _run(ssh, cmd2, password)
+
+        if out2.strip():
+            issues.append("Trust authentication enabled in pg_hba.conf")
+
+    # Check for network binding
+    cmd_net = "bash -lc 'netstat -tlnp 2>/dev/null | grep -E \"3306|5432\" | grep \"0.0.0.0\\|::\" || ss -tlnp 2>/dev/null | grep -E \"3306|5432\" | grep \"0.0.0.0\\|::\"'"
+    if password:
+        cmd_net = f"sudo -S {cmd_net}"
+    code_net, out_net, _ = _run(ssh, cmd_net, password)
+
+    if out_net.strip():
+        issues.append("Database listening on all interfaces (0.0.0.0)")
+
+    if issues:
+        return _warn(
+            "Database server",
+            f"{db_type.upper()} issues: {', '.join(issues)}",
+            f"Harden {db_type} configuration: remove anonymous users, restrict remote access, use strong authentication",
+            category,
+        )
+
+    return _pass(
+        "Database server",
+        f"{db_type.upper()} running with reasonable security settings",
+        "Review user privileges and connection encryption",
+        category,
+    )
+
+
+def check_mail_server_security(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check mail server security (Postfix, Exim, Sendmail)."""
+    category = "Mail Server"
+
+    # Check for running mail servers
+    cmd = "bash -lc 'ps aux | grep -E \"postfix|exim|sendmail\" | grep -v grep | head -3'"
+    code, out, _ = _run(ssh, cmd)
+
+    if not out.strip():
+        return _pass(
+            "Mail server",
+            "No mail server detected",
+            "No action",
+            category,
+        )
+
+    issues = []
+    server_type = None
+    if "postfix" in out.lower():
+        server_type = "postfix"
+    elif "exim" in out.lower():
+        server_type = "exim"
+    elif "sendmail" in out.lower():
+        server_type = "sendmail"
+
+    # Check Postfix configuration
+    if server_type == "postfix":
+        # Check for open relay
+        cmd2 = "bash -lc 'postconf -n smtpd_relay_restrictions 2>/dev/null || postconf -n smtpd_recipient_restrictions 2>/dev/null'"
+        code2, out2, _ = _run(ssh, cmd2)
+
+        if "permit_mynetworks" not in out2 and "reject_unauth_destination" not in out2:
+            issues.append("Relay restrictions not properly configured")
+
+        # Check TLS
+        cmd3 = "bash -lc 'postconf -n smtpd_tls_cert_file smtpd_use_tls 2>/dev/null'"
+        code3, out3, _ = _run(ssh, cmd3)
+
+        if not out3.strip() or "smtpd_use_tls = no" in out3:
+            issues.append("TLS not enabled")
+
+    # Check for SMTP on port 25 bound to all interfaces
+    cmd_net = "bash -lc 'netstat -tlnp 2>/dev/null | grep :25 | grep \"0.0.0.0\" || ss -tlnp 2>/dev/null | grep :25 | grep \"0.0.0.0\"'"
+    if password:
+        cmd_net = f"sudo -S {cmd_net}"
+    code_net, out_net, _ = _run(ssh, cmd_net, password)
+
+    if out_net.strip():
+        issues.append("SMTP listening on all interfaces")
+
+    if issues:
+        return _warn(
+            "Mail server",
+            f"{server_type.title() if server_type else 'Mail server'} issues: {', '.join(issues)}",
+            f"Harden mail server: configure relay restrictions, enable TLS, restrict network binding",
+            category,
+        )
+
+    return _pass(
+        "Mail server",
+        f"{server_type.title() if server_type else 'Mail server'} running with reasonable security settings",
+        "Review spam protection and authentication mechanisms",
+        category,
+    )
+
+
+def check_php_security(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check PHP security configuration."""
+    category = "Application Security"
+
+    # Check if PHP is installed
+    cmd = "bash -lc 'command -v php >/dev/null 2>&1 && php -v | head -1'"
+    code, out, _ = _run(ssh, cmd)
+
+    if code != 0 or not out.strip():
+        return _pass(
+            "PHP security",
+            "PHP not detected",
+            "No action",
+            category,
+        )
+
+    issues = []
+
+    # Check critical PHP settings
+    dangerous_functions = "bash -lc 'php -r \"echo ini_get(\\\"disable_functions\\\");\" 2>/dev/null'"
+    code2, out2, _ = _run(ssh, dangerous_functions)
+
+    dangerous = ["exec", "shell_exec", "system", "passthru", "proc_open", "popen"]
+    if code2 == 0:
+        disabled = out2.strip()
+        missing = [f for f in dangerous if f not in disabled]
+        if len(missing) > 3:
+            issues.append(f"Dangerous functions not disabled: {', '.join(missing[:3])}")
+
+    # Check expose_php
+    cmd3 = "bash -lc 'php -r \"echo ini_get(\\\"expose_php\\\");\" 2>/dev/null'"
+    code3, out3, _ = _run(ssh, cmd3)
+    if code3 == 0 and out3.strip() == "1":
+        issues.append("expose_php enabled (version disclosure)")
+
+    # Check allow_url_fopen
+    cmd4 = "bash -lc 'php -r \"echo ini_get(\\\"allow_url_fopen\\\");\" 2>/dev/null'"
+    code4, out4, _ = _run(ssh, cmd4)
+    if code4 == 0 and out4.strip() == "1":
+        issues.append("allow_url_fopen enabled (security risk)")
+
+    if issues:
+        return _warn(
+            "PHP security",
+            f"PHP {out.split()[1] if len(out.split()) > 1 else 'installed'} - Issues: {', '.join(issues)}",
+            "Harden PHP: disable dangerous functions, set expose_php=Off, disable allow_url_fopen in php.ini",
+            category,
+        )
+
+    return _pass(
+        "PHP security",
+        f"PHP {out.split()[1] if len(out.split()) > 1 else ''} with reasonable security settings",
+        "Review all php.ini settings and apply security hardening guide",
+        category,
+    )
+
+
+def check_dns_configuration(ssh: SSHSession, password: str = "") -> CheckResult:
+    """Check DNS resolver configuration and security."""
+    category = "Name Service"
+
+    # Check resolv.conf
+    cmd = "bash -lc 'cat /etc/resolv.conf 2>/dev/null | grep -v \"^#\" | grep nameserver'"
+    code, out, _ = _run(ssh, cmd)
+
+    if code != 0 or not out.strip():
+        return _warn(
+            "DNS configuration",
+            "No nameservers configured in /etc/resolv.conf",
+            "Configure DNS nameservers",
+            category,
+        )
+
+    issues = []
+    nameservers = out.strip().splitlines()
+
+    # Check for single point of failure
+    if len(nameservers) < 2:
+        issues.append("Only one nameserver configured (single point of failure)")
+
+    # Check for public DNS usage
+    public_dns = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1"]
+    for ns in nameservers:
+        for public in public_dns:
+            if public in ns:
+                issues.append(f"Using public DNS: {public}")
+                break
+
+    # Check DNSSEC
+    cmd2 = "bash -lc 'dig +short +dnssec . SOA 2>/dev/null | grep -c RRSIG'"
+    code2, out2, _ = _run(ssh, cmd2)
+
+    if code2 == 0 and out2.strip() == "0":
+        issues.append("DNSSEC validation not working")
+
+    if issues:
+        return _warn(
+            "DNS configuration",
+            f"Issues: {', '.join(issues[:3])}",
+            "Configure multiple nameservers, consider private DNS, enable DNSSEC",
+            category,
+        )
+
+    return _pass(
+        "DNS configuration",
+        f"{len(nameservers)} nameserver(s) configured",
+        "No action",
+        category,
+    )
+
+
 def run_all_checks(ssh: SSHSession, password: str = "") -> List[CheckResult]:
     results: list[CheckResult] = []
     # Original checks
@@ -2420,5 +3214,26 @@ def run_all_checks(ssh: SSHSession, password: str = "") -> List[CheckResult]:
     results.append(check_privilege_escalation_vectors(ssh, password))
     results.append(check_world_writable_system_files(ssh))
     results.append(check_deleted_file_handles(ssh))
+
+    # Lynis-inspired feature additions
+    results.append(check_boot_loader_password(ssh, password))
+    results.append(check_kernel_hardening(ssh))
+    results.append(check_file_integrity_tools(ssh))
+    results.append(check_package_manager_security(ssh))
+    results.append(check_logging_and_auditing(ssh, password))
+    results.append(check_selinux_apparmor(ssh))
+    results.append(check_security_tools(ssh))
+    results.append(check_filesystem_mounts(ssh))
+    results.append(check_shell_security(ssh))
+    results.append(check_compiler_presence(ssh))
+    results.append(check_legacy_services(ssh))
+    results.append(check_usb_storage(ssh, password))
+
+    # Server and application security checks
+    results.append(check_web_server_security(ssh, password))
+    results.append(check_database_security(ssh, password))
+    results.append(check_mail_server_security(ssh, password))
+    results.append(check_php_security(ssh, password))
+    results.append(check_dns_configuration(ssh, password))
 
     return results

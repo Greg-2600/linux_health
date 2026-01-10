@@ -83,3 +83,4 @@ bandit-report.json
 
 # Trivy
 trivy-results.sarif
+reports/

@@ -25,7 +25,10 @@ from linux_health.checks import (
 )
 from linux_health.cli import parse_ports, build_parser
 from linux_health.scanner import COMMON_PORTS, PortStatus
-from linux_health.report import render_report_text, render_report
+from linux_health.report import render_report_text, render_report, render_report_json
+import json
+import tempfile
+from pathlib import Path
 
 
 class TestParsePortsUtil:
@@ -1125,11 +1128,11 @@ class TestSSHSession:
         with patch("linux_health.ssh_client.paramiko.SSHClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
-            
+
             with SSHSession("host", "user", "pass") as session:
                 assert session._client is not None
                 mock_client.connect.assert_called_once()
-            
+
             mock_client.close.assert_called_once()
 
     def test_ssh_session_run_command(self):
@@ -1140,7 +1143,7 @@ class TestSSHSession:
         with patch("linux_health.ssh_client.paramiko.SSHClient") as mock_client_class:
             mock_client = MagicMock()
             mock_client_class.return_value = mock_client
-            
+
             # Mock exec_command response
             mock_stdout = MagicMock()
             mock_stderr = MagicMock()
@@ -1148,11 +1151,11 @@ class TestSSHSession:
             mock_stdout.read.return_value = b"test output"
             mock_stderr.read.return_value = b""
             mock_client.exec_command.return_value = (MagicMock(), mock_stdout, mock_stderr)
-            
+
             session = SSHSession("host", "user", "pass")
             session.connect()
             exit_code, stdout, stderr = session.run("ls")
-            
+
             assert exit_code == 0
             assert stdout == "test output"
             assert stderr == ""
@@ -1163,7 +1166,7 @@ class TestSSHSession:
         from linux_health.ssh_client import SSHSession
 
         session = SSHSession("host", "user", "pass")
-        
+
         with pytest.raises(RuntimeError, match="not connected"):
             session.run("ls")
 
@@ -1180,9 +1183,9 @@ class TestPortScanner:
             mock_socket = MagicMock()
             mock_socket_class.return_value.__enter__.return_value = mock_socket
             mock_socket.connect.return_value = None
-            
+
             result = _scan_single("127.0.0.1", 80, 1.0)
-            
+
             assert result.port == 80
             assert result.open is True
             assert result.reason == "Connected"
@@ -1197,9 +1200,9 @@ class TestPortScanner:
             mock_socket = MagicMock()
             mock_socket_class.return_value.__enter__.return_value = mock_socket
             mock_socket.connect.side_effect = socket.timeout()
-            
+
             result = _scan_single("127.0.0.1", 999, 0.1)
-            
+
             assert result.port == 999
             assert result.open is False
             assert result.reason == "timeout"
@@ -1213,9 +1216,9 @@ class TestPortScanner:
             mock_socket = MagicMock()
             mock_socket_class.return_value.__enter__.return_value = mock_socket
             mock_socket.connect.side_effect = OSError("Connection refused")
-            
+
             result = _scan_single("127.0.0.1", 999, 0.1)
-            
+
             assert result.port == 999
             assert result.open is False
             assert "Connection refused" in result.reason
@@ -1228,9 +1231,9 @@ class TestPortScanner:
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
             mock_scan.return_value = PortStatus(port=80, open=True, reason="Connected")
-            
+
             results = scan_ports("127.0.0.1", [80, 80, 80], timeout=0.1, max_workers=1)
-            
+
             # Should only scan once despite 3 duplicate ports
             assert len(results) == 1
             assert results[0].port == 80
@@ -1243,9 +1246,9 @@ class TestPortScanner:
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
             mock_scan.return_value = PortStatus(port=80, open=True, reason="Connected")
-            
+
             results = scan_ports("127.0.0.1", [80], timeout=0.1, max_workers=1)
-            
+
             assert len(results) == 1
 
 
@@ -1257,7 +1260,7 @@ class TestCLIFunctions:
         from linux_health.cli import build_parser
 
         parser = build_parser()
-        
+
         assert parser is not None
         assert parser.prog is not None
 
@@ -1267,7 +1270,7 @@ class TestCLIFunctions:
 
         parser = build_parser()
         args = parser.parse_args(["host", "user", "pass"])
-        
+
         assert args.hostname == "host"
         assert args.username == "user"
         assert args.password == "pass"
@@ -1285,7 +1288,7 @@ class TestCLIFunctions:
             "--format", "md",
             "--output", "report.md"
         ])
-        
+
         assert args.port == 2222
         assert args.timeout == 10.5
         assert args.command_timeout == 120
@@ -1303,7 +1306,7 @@ class TestCLIFunctions:
             "--enable-rootkit-scan",
             "--check-package-hygiene"
         ])
-        
+
         assert args.ask_password is True
         assert args.enable_rootkit_scan is True
         assert args.check_package_hygiene is True
@@ -1321,9 +1324,9 @@ class TestReportRendering:
             uptime="1 day",
             users="1"
         )
-        
+
         report = render_report_text(system, [], [])
-        
+
         assert "test" in report
         assert "Ubuntu" in report
         assert "Total Checks:  0" in report
@@ -1344,9 +1347,9 @@ class TestReportRendering:
             recommendation="Keep it up",
             category="Testing"
         )
-        
+
         report = render_report(system, [check], [])
-        
+
         assert "# Linux Host Health Report: test" in report
         assert "Test Check" in report
         assert "✅ PASS" in report
@@ -1365,14 +1368,14 @@ class TestReportRendering:
             CheckResult(category="Test", item="Check B", status="fail", details="Bad", recommendation="Fix it"),
             CheckResult(category="Test", item="Check C", status="warn", details="Careful", recommendation="Review"),
         ]
-        
+
         report = render_report_text(system, checks, [])
-        
+
         # Find positions of each check item (grouped by status)
         check_b_pos = report.find("Check B")  # fail status
         check_c_pos = report.find("Check C")  # warn status
         check_a_pos = report.find("Check A")  # pass status
-        
+
         # Verify FAIL comes first, then WARN, then PASS
         assert check_b_pos < check_c_pos < check_a_pos
 
@@ -1390,14 +1393,14 @@ class TestReportRendering:
             CheckResult(category="Test", item="Check B", status="fail", details="Bad", recommendation="Fix it"),
             CheckResult(category="Test", item="Check C", status="warn", details="Careful", recommendation="Review"),
         ]
-        
+
         report = render_report(system, checks, [])
-        
+
         # Find positions of each check item (grouped by status)
         check_b_pos = report.find("Check B")  # fail status
         check_c_pos = report.find("Check C")  # warn status
         check_a_pos = report.find("Check A")  # pass status
-        
+
         # Verify FAIL comes first, then WARN, then PASS
         assert check_b_pos < check_c_pos < check_a_pos
 
@@ -1408,20 +1411,20 @@ class TestCommandTimeout:
     def test_set_command_timeout(self):
         """Test setting command timeout"""
         from linux_health.checks import set_command_timeout, COMMAND_TIMEOUT
-        
+
         set_command_timeout(120.0)
-        
+
         # Can't directly check global but ensure no error
         assert True
 
     def test_set_command_timeout_minimum(self):
         """Test command timeout has minimum value"""
         from linux_health.checks import set_command_timeout
-        
+
         # Should not raise, should clamp to minimum
         set_command_timeout(0.5)
         set_command_timeout(-10)
-        
+
         assert True
 
 
@@ -1431,12 +1434,12 @@ class TestDetailedSecurityInfo:
     def test_gather_suid_binaries(self):
         """Test gathering SUID binaries"""
         from linux_health.checks import gather_suid_binaries
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "/usr/bin/sudo\n/usr/bin/passwd", ""))
-        
+
         result = gather_suid_binaries(mock_ssh)
-        
+
         # Returns string containing SUID binaries
         assert isinstance(result, str)
         assert "/usr/bin/sudo" in result
@@ -1445,46 +1448,329 @@ class TestDetailedSecurityInfo:
     def test_gather_root_logins(self):
         """Test gathering root login attempts"""
         from linux_health.checks import gather_root_logins
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "root pts/0 192.168.1.1", ""))
-        
+
         result = gather_root_logins(mock_ssh)
-        
+
         assert "root pts/0" in result
 
     def test_gather_disk_usage_dirs(self):
         """Test gathering disk usage by directory"""
         from linux_health.checks import gather_disk_usage_dirs
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "1G /var/log\n500M /tmp", ""))
-        
+
         result = gather_disk_usage_dirs(mock_ssh)
-        
+
         assert "1G" in result or "/var/log" in result
 
     def test_gather_firewall_rules(self):
         """Test gathering firewall rules"""
         from linux_health.checks import gather_firewall_rules
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "ACCEPT all", ""))
-        
+
         result = gather_firewall_rules(mock_ssh)
-        
+
         assert "ACCEPT" in result or len(result) >= 0
 
     def test_gather_sudoers_info(self):
         """Test gathering sudoers information"""
         from linux_health.checks import gather_sudoers_info
-        
+
         mock_ssh = Mock()
         mock_ssh.run = MagicMock(return_value=(0, "user ALL=(ALL) ALL", ""))
-        
+
         result = gather_sudoers_info(mock_ssh)
-        
+
         assert "user" in result or "ALL" in result
+
+
+class TestJSONOutput:
+    """Tests for JSON output format"""
+
+    def _base_system(self):
+        return SystemInfo(
+            hostname="testhost",
+            kernel="5.15.0-58",
+            os="Ubuntu 22.04",
+            uptime="up 5 days",
+            users="2",
+        )
+
+    def test_json_output_structure(self):
+        """Test JSON output has required structure"""
+        system = self._base_system()
+        checks = [
+            CheckResult(
+                category="Storage",
+                item="Disk usage",
+                status="pass",
+                details="45% used",
+                recommendation="No action",
+                test_id="STOR-6310"
+            )
+        ]
+        ports = [PortStatus(port=22, open=True, reason="ssh")]
+
+        json_output = render_report_json(system, checks, ports, None)
+        report = json.loads(json_output)
+
+        assert "scan_info" in report
+        assert "system" in report
+        assert "summary" in report
+        assert "hardening_by_category" in report
+        assert "checks" in report
+        assert "ports" in report
+
+    def test_json_output_scan_info(self):
+        """Test scan_info section"""
+        system = self._base_system()
+        json_output = render_report_json(system, [], [], None)
+        report = json.loads(json_output)
+
+        assert report["scan_info"]["scanner"] == "Linux Health Security Scanner"
+        assert "generated_at" in report["scan_info"]
+        assert "version" in report["scan_info"]
+
+    def test_json_output_system_info(self):
+        """Test system section"""
+        system = self._base_system()
+        json_output = render_report_json(system, [], [], None)
+        report = json.loads(json_output)
+
+        assert report["system"]["hostname"] == "testhost"
+        assert report["system"]["os"] == "Ubuntu 22.04"
+        assert report["system"]["kernel"] == "5.15.0-58"
+
+    def test_json_output_summary_calculations(self):
+        """Test summary statistics calculation"""
+        system = self._base_system()
+        checks = [
+            CheckResult("Cat1", "Test1", "pass", "OK", "None", "T1"),
+            CheckResult("Cat2", "Test2", "warn", "Warning", "Fix it", "T2"),
+            CheckResult("Cat3", "Test3", "fail", "Failed", "Fix now", "T3"),
+        ]
+        json_output = render_report_json(system, checks, [], None)
+        report = json.loads(json_output)
+
+        assert report["summary"]["total_checks"] == 3
+        assert report["summary"]["passed"] == 1
+        assert report["summary"]["warned"] == 1
+        assert report["summary"]["failed"] == 1
+        assert 0 <= report["summary"]["hardening_index"] <= 100
+
+    def test_json_output_checks_include_test_ids(self):
+        """Test that checks include test IDs"""
+        system = self._base_system()
+        checks = [
+            CheckResult(
+                "Storage", "Disk", "pass", "OK", "None", test_id="STOR-6310"
+            )
+        ]
+        json_output = render_report_json(system, checks, [], None)
+        report = json.loads(json_output)
+
+        assert len(report["checks"]) == 1
+        assert report["checks"][0]["test_id"] == "STOR-6310"
+        assert report["checks"][0]["category"] == "Storage"
+
+    def test_json_output_ports_section(self):
+        """Test ports section structure"""
+        system = self._base_system()
+        ports = [
+            PortStatus(port=22, open=True, reason="ssh"),
+            PortStatus(port=80, open=True, reason="http"),
+            PortStatus(port=443, open=False, reason="filtered"),
+        ]
+        json_output = render_report_json(system, [], ports, None)
+        report = json.loads(json_output)
+
+        assert report["ports"]["scanned"] == 3
+        assert report["ports"]["open"] == 2
+        assert len(report["ports"]["open_ports"]) == 2
+        assert report["ports"]["open_ports"][0]["port"] == 22
+
+    def test_json_output_valid_json(self):
+        """Test that output is valid JSON"""
+        system = self._base_system()
+        json_output = render_report_json(system, [], [], None)
+
+        # Should not raise exception
+        report = json.loads(json_output)
+        assert isinstance(report, dict)
+
+
+class TestConfigurationSystem:
+    """Tests for profile/configuration system"""
+
+    def test_config_import_available(self):
+        """Test that config module is importable"""
+        try:
+            from linux_health import config
+            assert hasattr(config, 'ScanProfile')
+            assert hasattr(config, 'load_profile')
+            assert hasattr(config, 'should_skip_test')
+        except ImportError:
+            pytest.skip("PyYAML not installed, config system unavailable")
+
+    def test_scan_profile_creation(self):
+        """Test creating ScanProfile"""
+        try:
+            from linux_health.config import ScanProfile
+
+            profile = ScanProfile(
+                name="test",
+                skip_tests={"TEST-1", "TEST-2"},
+                skip_categories={"Storage"}
+            )
+
+            assert profile.name == "test"
+            assert "TEST-1" in profile.skip_tests
+            assert "Storage" in profile.skip_categories
+        except ImportError:
+            pytest.skip("PyYAML not installed")
+
+    def test_should_skip_test_by_id(self):
+        """Test skipping by test ID"""
+        try:
+            from linux_health.config import ScanProfile, should_skip_test
+
+            profile = ScanProfile(skip_tests={"STOR-6310"})
+
+            assert should_skip_test("STOR-6310", "Storage", profile) is True
+            assert should_skip_test("MEM-2914", "Memory", profile) is False
+        except ImportError:
+            pytest.skip("PyYAML not installed")
+
+    def test_should_skip_test_by_category(self):
+        """Test skipping by category"""
+        try:
+            from linux_health.config import ScanProfile, should_skip_test
+
+            profile = ScanProfile(skip_categories={"Storage", "Memory"})
+
+            assert should_skip_test("STOR-6310", "Storage", profile) is True
+            assert should_skip_test("MEM-2914", "Memory", profile) is True
+            assert should_skip_test("CPU-1620", "CPU/Load", profile) is False
+        except ImportError:
+            pytest.skip("PyYAML not installed")
+
+    def test_should_skip_test_only_mode(self):
+        """Test only_tests exclusive mode"""
+        try:
+            from linux_health.config import ScanProfile, should_skip_test
+
+            profile = ScanProfile(only_tests={"STOR-6310", "MEM-2914"})
+
+            assert should_skip_test("STOR-6310", "Storage", profile) is False
+            assert should_skip_test("MEM-2914", "Memory", profile) is False
+            assert should_skip_test("CPU-1620", "CPU/Load", profile) is True
+        except ImportError:
+            pytest.skip("PyYAML not installed")
+
+    def test_load_profile_from_yaml(self):
+        """Test loading profile from YAML file"""
+        try:
+            from linux_health.config import load_profile
+
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+                f.write("""
+name: "test-profile"
+description: "Test profile"
+skip_tests:
+  - STOR-6310
+  - MEM-2914
+skip_categories:
+  - "Malware Detection"
+timeout: 15
+verbose: true
+""")
+                profile_path = f.name
+
+            try:
+                profile = load_profile(profile_path)
+
+                assert profile.name == "test-profile"
+                assert "STOR-6310" in profile.skip_tests
+                assert "Malware Detection" in profile.skip_categories
+                assert profile.timeout == 15
+                assert profile.verbose is True
+            finally:
+                Path(profile_path).unlink(missing_ok=True)
+        except ImportError:
+            pytest.skip("PyYAML not installed")
+
+
+class TestCLIEnhancements:
+    """Tests for enhanced CLI features"""
+
+    def test_parser_has_format_option(self):
+        """Test that --format option exists"""
+        parser = build_parser()
+        args = parser.parse_args(['host', 'user', 'pass', '--format', 'json'])
+
+        assert args.format == 'json'
+
+    def test_parser_format_choices(self):
+        """Test format argument accepts valid choices"""
+        parser = build_parser()
+
+        args_text = parser.parse_args(['host', 'user', 'pass', '--format', 'text'])
+        assert args_text.format == 'text'
+
+        args_md = parser.parse_args(['host', 'user', 'pass', '--format', 'md'])
+        assert args_md.format == 'md'
+
+        args_json = parser.parse_args(['host', 'user', 'pass', '--format', 'json'])
+        assert args_json.format == 'json'
+
+    def test_parser_has_profile_option(self):
+        """Test that --profile option exists"""
+        parser = build_parser()
+        args = parser.parse_args(['host', 'user', 'pass', '--profile', 'test.yaml'])
+
+        assert args.profile == 'test.yaml'
+
+    def test_parser_profile_optional(self):
+        """Test that profile is optional"""
+        parser = build_parser()
+        args = parser.parse_args(['host', 'user', 'pass'])
+
+        assert args.profile is None
+
+
+class TestCheckResultWithTestID:
+    """Tests for CheckResult with test_id field"""
+
+    def test_check_result_has_test_id_field(self):
+        """Test that CheckResult includes test_id"""
+        result = CheckResult(
+            category="Test",
+            item="Test Item",
+            status="pass",
+            details="Details",
+            recommendation="Recommendation",
+            test_id="TEST-1234"
+        )
+
+        assert result.test_id == "TEST-1234"
+
+    def test_check_result_test_id_defaults_to_empty(self):
+        """Test that test_id defaults to empty string"""
+        result = CheckResult(
+            category="Test",
+            item="Test Item",
+            status="pass",
+            details="Details",
+            recommendation="Recommendation"
+        )
+
+        assert result.test_id == ""
 
 
 if __name__ == "__main__":
