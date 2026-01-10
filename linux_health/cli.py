@@ -25,9 +25,15 @@ from .checks import (
     DetailedSecurityInfo,
     set_command_timeout,
 )
-from .report import render_report, render_report_text
+from .report import render_report, render_report_text, render_report_json
 from .scanner import COMMON_PORTS, scan_ports
 from .ssh_client import SSHSession
+
+try:
+    from .config import load_profile, should_skip_test
+    HAS_CONFIG = True
+except ImportError:
+    HAS_CONFIG = False
 
 
 def parse_ports(raw: str | None) -> list[int]:
@@ -80,9 +86,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--format",
-        choices=["md", "text"],
+        choices=["md", "text", "json"],
         default="text",
-        help="Report format (md or text)",
+        help="Report format (md, text, or json)",
+    )
+    parser.add_argument(
+        "--profile",
+        type=str,
+        default=None,
+        help="Load scan profile from YAML file (allows test filtering)",
     )
     parser.add_argument(
         "--ask-password",
@@ -110,6 +122,15 @@ def main(argv: list[str] | None = None) -> int:
     password = args.password
     if args.ask_password or password == "-":
         password = getpass.getpass("SSH password: ")
+
+    # Load profile if specified
+    profile = None
+    if args.profile and HAS_CONFIG:
+        try:
+            profile = load_profile(args.profile)
+            print(f"Loaded scan profile from {args.profile}")
+        except Exception as e:
+            print(f"Warning: Failed to load profile {args.profile}: {e}")
 
     # Apply per-command timeout for all SSH execs
     set_command_timeout(args.command_timeout)
@@ -153,8 +174,20 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     port_results = scan_ports(args.hostname, ports)
+
+    # Filter checks if profile provided
+    if profile and HAS_CONFIG:
+        check_results = [
+            c for c in check_results
+            if not should_skip_test(c.test_id, c.category, profile)
+        ]
+
     if args.format == "text":
         report = render_report_text(
+            system_info, check_results, port_results, detailed_security
+        )
+    elif args.format == "json":
+        report = render_report_json(
             system_info, check_results, port_results, detailed_security
         )
     else:

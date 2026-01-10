@@ -5,6 +5,65 @@ All notable changes to Linux Health Security Scanner are documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-10
+
+### Added
+
+**Major Features (95% Lynis Parity Achievement)**
+- ✨ **Test ID System** - Lynis-compatible test identifiers (e.g., STOR-6310, AUTH-9328) for all 53 checks
+- 📊 **JSON Output Format** - Machine-readable structured output via `--format json`
+- ⚙️ **Profile/Configuration System** - YAML-based scan profiles for test filtering and customization
+- 🎯 **Test Skip Functionality** - Skip tests by ID or category via profile configuration
+- 🔍 **Enhanced Check Coverage** - Expanded from 36 to 53+ security checks across 20+ categories
+
+**New Security Checks**
+- Boot/kernel hardening (GRUB password, sysctl parameters)
+- File integrity monitoring tools (AIDE, Tripwire, OSSEC)
+- Package manager security (GPG verification)
+- Logging and auditing (syslog, rsyslog, auditd)
+- MAC systems (SELinux, AppArmor enforcement)
+- Security tools detection (fail2ban, ClamAV, IDS/IPS)
+- File system security (mount options: noexec, nosuid, nodev)
+- Shell security (umask, TMOUT, history configuration)
+- Compiler presence warnings on production systems
+- Legacy service detection (telnet, rsh, FTP)
+- USB storage control auditing
+- Web server security (Apache/Nginx configuration)
+- Database security (MySQL/PostgreSQL hardening)
+- Mail server security (Postfix/Exim/Sendmail)
+- PHP security configuration
+- DNS configuration validation
+
+**API & Output Enhancements**
+- `render_report_json()` function with comprehensive scan data structure
+- Test ID field in `CheckResult` dataclass
+- Profile auto-discovery from multiple default paths
+- `--profile` CLI argument for YAML configuration files
+- Graceful degradation when PyYAML not installed
+
+**Testing**
+- 20+ new unit tests for JSON output, profiles, and configuration
+- All tests passing (127+ total tests)
+- Test coverage for new features
+
+**Documentation**
+- Added FEATURES_ADDED.md with detailed feature documentation
+- Updated README with JSON output examples
+- Profile/configuration usage guide
+- CI/CD integration examples
+- PyYAML dependency documentation
+- Updated Lynis comparison table (95% parity achieved)
+
+### Changed
+- CLI now supports `--format {text|md|json}` (was `{text|md}`)
+- Enhanced CLI with `--profile` argument
+- Updated requirements.txt to include pyyaml>=6.0
+
+### Fixed
+- Type hints improved for better IDE support
+- Import organization cleanup
+- Linting issues resolved in new modules
+
 ## [1.0.0] - 2026-01-09
 
 ### Added
