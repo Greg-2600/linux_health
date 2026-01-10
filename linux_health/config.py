@@ -52,30 +52,30 @@ def load_profile(profile_path: str | Path) -> ScanProfile:
     if not path.exists():
         raise FileNotFoundError(f"Profile not found: {profile_path}")
 
-    with open(path, 'r') as f:
+    with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     if not data:
         return ScanProfile()
 
     # Convert lists to sets for skip/only tests
-    skip_tests = set(data.get('skip_tests', []))
-    only_tests = set(data.get('only_tests', []))
-    skip_categories = set(data.get('skip_categories', []))
+    skip_tests = set(data.get("skip_tests", []))
+    only_tests = set(data.get("only_tests", []))
+    skip_categories = set(data.get("skip_categories", []))
 
     return ScanProfile(
-        name=data.get('name', 'custom'),
-        description=data.get('description', ''),
+        name=data.get("name", "custom"),
+        description=data.get("description", ""),
         skip_tests=skip_tests,
         only_tests=only_tests,
         skip_categories=skip_categories,
-        enable_rootkit_scan=data.get('enable_rootkit_scan', False),
-        enable_package_hygiene=data.get('enable_package_hygiene', False),
-        timeout=data.get('timeout', 10),
-        command_timeout=data.get('command_timeout', 60),
-        show_warnings_only=data.get('show_warnings_only', False),
-        verbose=data.get('verbose', False),
-        custom_settings=data.get('custom_settings', {}),
+        enable_rootkit_scan=data.get("enable_rootkit_scan", False),
+        enable_package_hygiene=data.get("enable_package_hygiene", False),
+        timeout=data.get("timeout", 10),
+        command_timeout=data.get("command_timeout", 60),
+        show_warnings_only=data.get("show_warnings_only", False),
+        verbose=data.get("verbose", False),
+        custom_settings=data.get("custom_settings", {}),
     )
 
 
@@ -127,7 +127,7 @@ custom_settings: {}
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, 'w') as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(profile_content)
 
 
@@ -159,15 +159,13 @@ def load_profile_auto() -> ScanProfile | None:
         if path.exists():
             try:
                 return load_profile(path)
-            except Exception:
+            except (FileNotFoundError, yaml.YAMLError, ValueError):
                 continue
 
     return None
 
 
-def should_skip_test(
-    test_id: str, category: str, profile: ScanProfile | None
-) -> bool:
+def should_skip_test(test_id: str, category: str, profile: ScanProfile | None) -> bool:
     """Determine if a test should be skipped based on profile."""
     if not profile:
         return False

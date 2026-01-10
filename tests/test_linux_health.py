@@ -1150,7 +1150,11 @@ class TestSSHSession:
             mock_stdout.channel.recv_exit_status.return_value = 0
             mock_stdout.read.return_value = b"test output"
             mock_stderr.read.return_value = b""
-            mock_client.exec_command.return_value = (MagicMock(), mock_stdout, mock_stderr)
+            mock_client.exec_command.return_value = (
+                MagicMock(),
+                mock_stdout,
+                mock_stderr,
+            )
 
             session = SSHSession("host", "user", "pass")
             session.connect()
@@ -1230,6 +1234,7 @@ class TestPortScanner:
 
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
+
             mock_scan.return_value = PortStatus(port=80, open=True, reason="Connected")
 
             results = scan_ports("127.0.0.1", [80, 80, 80], timeout=0.1, max_workers=1)
@@ -1245,6 +1250,7 @@ class TestPortScanner:
 
         with patch("linux_health.scanner._scan_single") as mock_scan:
             from linux_health.scanner import PortStatus
+
             mock_scan.return_value = PortStatus(port=80, open=True, reason="Connected")
 
             results = scan_ports("127.0.0.1", [80], timeout=0.1, max_workers=1)
@@ -1280,14 +1286,23 @@ class TestCLIFunctions:
         from linux_health.cli import build_parser
 
         parser = build_parser()
-        args = parser.parse_args([
-            "host", "user", "pass",
-            "--port", "2222",
-            "--timeout", "10.5",
-            "--command-timeout", "120",
-            "--format", "md",
-            "--output", "report.md"
-        ])
+        args = parser.parse_args(
+            [
+                "host",
+                "user",
+                "pass",
+                "--port",
+                "2222",
+                "--timeout",
+                "10.5",
+                "--command-timeout",
+                "120",
+                "--format",
+                "md",
+                "--output",
+                "report.md",
+            ]
+        )
 
         assert args.port == 2222
         assert args.timeout == 10.5
@@ -1300,12 +1315,16 @@ class TestCLIFunctions:
         from linux_health.cli import build_parser
 
         parser = build_parser()
-        args = parser.parse_args([
-            "host", "user", "pass",
-            "--ask-password",
-            "--enable-rootkit-scan",
-            "--check-package-hygiene"
-        ])
+        args = parser.parse_args(
+            [
+                "host",
+                "user",
+                "pass",
+                "--ask-password",
+                "--enable-rootkit-scan",
+                "--check-package-hygiene",
+            ]
+        )
 
         assert args.ask_password is True
         assert args.enable_rootkit_scan is True
@@ -1318,11 +1337,7 @@ class TestReportRendering:
     def test_render_report_text_with_no_checks(self):
         """Test text report with no checks"""
         system = SystemInfo(
-            hostname="test",
-            kernel="5.15",
-            os="Ubuntu",
-            uptime="1 day",
-            users="1"
+            hostname="test", kernel="5.15", os="Ubuntu", uptime="1 day", users="1"
         )
 
         report = render_report_text(system, [], [])
@@ -1334,18 +1349,14 @@ class TestReportRendering:
     def test_render_report_markdown_with_checks(self):
         """Test markdown report with checks"""
         system = SystemInfo(
-            hostname="test",
-            kernel="5.15",
-            os="Ubuntu",
-            uptime="1 day",
-            users="1"
+            hostname="test", kernel="5.15", os="Ubuntu", uptime="1 day", users="1"
         )
         check = CheckResult(
             item="Test Check",
             status="pass",
             details="All good",
             recommendation="Keep it up",
-            category="Testing"
+            category="Testing",
         )
 
         report = render_report(system, [check], [])
@@ -1357,16 +1368,30 @@ class TestReportRendering:
     def test_render_report_text_status_grouping(self):
         """Test that text report groups by status"""
         system = SystemInfo(
-            hostname="test",
-            kernel="5.15",
-            os="Ubuntu",
-            uptime="1 day",
-            users="1"
+            hostname="test", kernel="5.15", os="Ubuntu", uptime="1 day", users="1"
         )
         checks = [
-            CheckResult(category="Test", item="Check A", status="pass", details="OK", recommendation="None"),
-            CheckResult(category="Test", item="Check B", status="fail", details="Bad", recommendation="Fix it"),
-            CheckResult(category="Test", item="Check C", status="warn", details="Careful", recommendation="Review"),
+            CheckResult(
+                category="Test",
+                item="Check A",
+                status="pass",
+                details="OK",
+                recommendation="None",
+            ),
+            CheckResult(
+                category="Test",
+                item="Check B",
+                status="fail",
+                details="Bad",
+                recommendation="Fix it",
+            ),
+            CheckResult(
+                category="Test",
+                item="Check C",
+                status="warn",
+                details="Careful",
+                recommendation="Review",
+            ),
         ]
 
         report = render_report_text(system, checks, [])
@@ -1382,16 +1407,30 @@ class TestReportRendering:
     def test_render_report_markdown_status_grouping(self):
         """Test that markdown report groups by status"""
         system = SystemInfo(
-            hostname="test",
-            kernel="5.15",
-            os="Ubuntu",
-            uptime="1 day",
-            users="1"
+            hostname="test", kernel="5.15", os="Ubuntu", uptime="1 day", users="1"
         )
         checks = [
-            CheckResult(category="Test", item="Check A", status="pass", details="OK", recommendation="None"),
-            CheckResult(category="Test", item="Check B", status="fail", details="Bad", recommendation="Fix it"),
-            CheckResult(category="Test", item="Check C", status="warn", details="Careful", recommendation="Review"),
+            CheckResult(
+                category="Test",
+                item="Check A",
+                status="pass",
+                details="OK",
+                recommendation="None",
+            ),
+            CheckResult(
+                category="Test",
+                item="Check B",
+                status="fail",
+                details="Bad",
+                recommendation="Fix it",
+            ),
+            CheckResult(
+                category="Test",
+                item="Check C",
+                status="warn",
+                details="Careful",
+                recommendation="Review",
+            ),
         ]
 
         report = render_report(system, checks, [])
@@ -1512,7 +1551,7 @@ class TestJSONOutput:
                 status="pass",
                 details="45% used",
                 recommendation="No action",
-                test_id="STOR-6310"
+                test_id="STOR-6310",
             )
         ]
         ports = [PortStatus(port=22, open=True, reason="ssh")]
@@ -1568,9 +1607,7 @@ class TestJSONOutput:
         """Test that checks include test IDs"""
         system = self._base_system()
         checks = [
-            CheckResult(
-                "Storage", "Disk", "pass", "OK", "None", test_id="STOR-6310"
-            )
+            CheckResult("Storage", "Disk", "pass", "OK", "None", test_id="STOR-6310")
         ]
         json_output = render_report_json(system, checks, [], None)
         report = json.loads(json_output)
@@ -1612,9 +1649,10 @@ class TestConfigurationSystem:
         """Test that config module is importable"""
         try:
             from linux_health import config
-            assert hasattr(config, 'ScanProfile')
-            assert hasattr(config, 'load_profile')
-            assert hasattr(config, 'should_skip_test')
+
+            assert hasattr(config, "ScanProfile")
+            assert hasattr(config, "load_profile")
+            assert hasattr(config, "should_skip_test")
         except ImportError:
             pytest.skip("PyYAML not installed, config system unavailable")
 
@@ -1626,7 +1664,7 @@ class TestConfigurationSystem:
             profile = ScanProfile(
                 name="test",
                 skip_tests={"TEST-1", "TEST-2"},
-                skip_categories={"Storage"}
+                skip_categories={"Storage"},
             )
 
             assert profile.name == "test"
@@ -1678,8 +1716,11 @@ class TestConfigurationSystem:
         try:
             from linux_health.config import load_profile
 
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-                f.write("""
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".yaml", delete=False
+            ) as f:
+                f.write(
+                    """
 name: "test-profile"
 description: "Test profile"
 skip_tests:
@@ -1689,7 +1730,8 @@ skip_categories:
   - "Malware Detection"
 timeout: 15
 verbose: true
-""")
+"""
+                )
                 profile_path = f.name
 
             try:
@@ -1712,34 +1754,34 @@ class TestCLIEnhancements:
     def test_parser_has_format_option(self):
         """Test that --format option exists"""
         parser = build_parser()
-        args = parser.parse_args(['host', 'user', 'pass', '--format', 'json'])
+        args = parser.parse_args(["host", "user", "pass", "--format", "json"])
 
-        assert args.format == 'json'
+        assert args.format == "json"
 
     def test_parser_format_choices(self):
         """Test format argument accepts valid choices"""
         parser = build_parser()
 
-        args_text = parser.parse_args(['host', 'user', 'pass', '--format', 'text'])
-        assert args_text.format == 'text'
+        args_text = parser.parse_args(["host", "user", "pass", "--format", "text"])
+        assert args_text.format == "text"
 
-        args_md = parser.parse_args(['host', 'user', 'pass', '--format', 'md'])
-        assert args_md.format == 'md'
+        args_md = parser.parse_args(["host", "user", "pass", "--format", "md"])
+        assert args_md.format == "md"
 
-        args_json = parser.parse_args(['host', 'user', 'pass', '--format', 'json'])
-        assert args_json.format == 'json'
+        args_json = parser.parse_args(["host", "user", "pass", "--format", "json"])
+        assert args_json.format == "json"
 
     def test_parser_has_profile_option(self):
         """Test that --profile option exists"""
         parser = build_parser()
-        args = parser.parse_args(['host', 'user', 'pass', '--profile', 'test.yaml'])
+        args = parser.parse_args(["host", "user", "pass", "--profile", "test.yaml"])
 
-        assert args.profile == 'test.yaml'
+        assert args.profile == "test.yaml"
 
     def test_parser_profile_optional(self):
         """Test that profile is optional"""
         parser = build_parser()
-        args = parser.parse_args(['host', 'user', 'pass'])
+        args = parser.parse_args(["host", "user", "pass"])
 
         assert args.profile is None
 
@@ -1755,7 +1797,7 @@ class TestCheckResultWithTestID:
             status="pass",
             details="Details",
             recommendation="Recommendation",
-            test_id="TEST-1234"
+            test_id="TEST-1234",
         )
 
         assert result.test_id == "TEST-1234"
@@ -1767,7 +1809,7 @@ class TestCheckResultWithTestID:
             item="Test Item",
             status="pass",
             details="Details",
-            recommendation="Recommendation"
+            recommendation="Recommendation",
         )
 
         assert result.test_id == ""

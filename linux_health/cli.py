@@ -31,6 +31,7 @@ from .ssh_client import SSHSession
 
 try:
     from .config import load_profile, should_skip_test
+
     HAS_CONFIG = True
 except ImportError:
     HAS_CONFIG = False
@@ -46,8 +47,8 @@ def parse_ports(raw: str | None) -> list[int]:
             continue
         try:
             ports.append(int(part))
-        except ValueError:
-            raise argparse.ArgumentTypeError(f"Invalid port: {part}")
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"Invalid port: {part}") from exc
     if not ports:
         return COMMON_PORTS
     return ports
@@ -178,7 +179,8 @@ def main(argv: list[str] | None = None) -> int:
     # Filter checks if profile provided
     if profile and HAS_CONFIG:
         check_results = [
-            c for c in check_results
+            c
+            for c in check_results
             if not should_skip_test(c.test_id, c.category, profile)
         ]
 

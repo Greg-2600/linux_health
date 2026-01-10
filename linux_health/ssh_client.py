@@ -51,7 +51,7 @@ class SSHSession:
     def run(self, command: str, timeout: float = 10.0) -> tuple[int, str, str]:
         if not self._client:
             raise RuntimeError("SSHSession not connected")
-        stdin, stdout, stderr = self._client.exec_command(command, timeout=timeout)
+        _, stdout, stderr = self._client.exec_command(command, timeout=timeout)
         exit_status = stdout.channel.recv_exit_status()
         out = stdout.read().decode("utf-8", errors="replace").strip()
         err = stderr.read().decode("utf-8", errors="replace").strip()

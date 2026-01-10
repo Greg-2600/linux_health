@@ -112,7 +112,9 @@ def gather_system_info(ssh: SSHSession) -> SystemInfo:
     )
 
 
-def _pass(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
+def _pass(
+    item: str, details: str, recommendation: str, category: str, test_id: str = ""
+) -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
@@ -123,7 +125,9 @@ def _pass(item: str, details: str, recommendation: str, category: str, test_id: 
     )
 
 
-def _warn(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
+def _warn(
+    item: str, details: str, recommendation: str, category: str, test_id: str = ""
+) -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
@@ -134,7 +138,9 @@ def _warn(item: str, details: str, recommendation: str, category: str, test_id: 
     )
 
 
-def _fail(item: str, details: str, recommendation: str, category: str, test_id: str = "") -> CheckResult:
+def _fail(
+    item: str, details: str, recommendation: str, category: str, test_id: str = ""
+) -> CheckResult:
     return CheckResult(
         category=category,
         item=item,
@@ -864,13 +870,6 @@ def check_abnormal_network_processes(ssh: SSHSession) -> CheckResult:
         category,
     )
 
-    return _pass(
-        "Abnormal network processes",
-        "No suspicious network-bound processes detected",
-        "Continue monitoring with: ss -tulpn | grep LISTEN",
-        category,
-    )
-
 
 def check_suspicious_process_locations(ssh: SSHSession) -> CheckResult:
     """Check for processes running from suspicious locations like /tmp, /dev/shm"""
@@ -1395,10 +1394,6 @@ def gather_available_updates(ssh: SSHSession, password: str = "") -> str:
     if password:
         cmd = f"sudo -S {cmd}"
     code, out, err = _run(ssh, cmd, password)
-    if code != 0 or not out.strip():
-        return "Could not check available updates"
-    count = out.strip()
-    return f"{count} packages available for update"
     if code != 0 or not out.strip():
         return "Could not check available updates"
     count = out.strip()
@@ -2391,9 +2386,9 @@ def check_boot_loader_password(ssh: SSHSession, password: str = "") -> CheckResu
     category = "Boot/Kernel"
     cmd = (
         "bash -lc 'if [ -f /boot/grub/grub.cfg ]; then "
-        "grep -E \"^password|^set superusers\" /boot/grub/grub.cfg 2>/dev/null; "
+        'grep -E "^password|^set superusers" /boot/grub/grub.cfg 2>/dev/null; '
         "elif [ -f /boot/grub2/grub.cfg ]; then "
-        "grep -E \"^password|^set superusers\" /boot/grub2/grub.cfg 2>/dev/null; "
+        'grep -E "^password|^set superusers" /boot/grub2/grub.cfg 2>/dev/null; '
         "fi'"
     )
     if password:
@@ -2479,7 +2474,11 @@ def check_file_integrity_tools(ssh: SSHSession) -> CheckResult:
     category = "System Integrity"
 
     tools = ["aide", "tripwire", "ossec-control", "samhain"]
-    cmd = "bash -lc 'for tool in " + " ".join(tools) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    cmd = (
+        "bash -lc 'for tool in "
+        + " ".join(tools)
+        + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    )
 
     code, out, err = _run(ssh, cmd)
 
@@ -2507,18 +2506,21 @@ def check_package_manager_security(ssh: SSHSession) -> CheckResult:
     # Check APT GPG verification
     cmd = (
         "bash -lc 'if command -v apt-config >/dev/null 2>&1; then "
-        "apt-config dump | grep -E \"APT::Get::AllowUnauthenticated|Acquire::AllowInsecureRepositories\"; "
+        'apt-config dump | grep -E "APT::Get::AllowUnauthenticated|Acquire::AllowInsecureRepositories"; '
         "elif command -v dnf >/dev/null 2>&1; then "
-        "grep -E \"^gpgcheck=\" /etc/dnf/dnf.conf /etc/yum.conf 2>/dev/null; "
+        'grep -E "^gpgcheck=" /etc/dnf/dnf.conf /etc/yum.conf 2>/dev/null; '
         "elif command -v yum >/dev/null 2>&1; then "
-        "grep -E \"^gpgcheck=\" /etc/yum.conf 2>/dev/null; "
+        'grep -E "^gpgcheck=" /etc/yum.conf 2>/dev/null; '
         "fi'"
     )
 
     code, out, err = _run(ssh, cmd)
 
     issues = []
-    if "AllowUnauthenticated \"true\"" in out or "AllowInsecureRepositories \"true\"" in out:
+    if (
+        'AllowUnauthenticated "true"' in out
+        or 'AllowInsecureRepositories "true"' in out
+    ):
         issues.append("APT allows unauthenticated packages")
 
     if "gpgcheck=0" in out:
@@ -2528,7 +2530,7 @@ def check_package_manager_security(ssh: SSHSession) -> CheckResult:
         # Default is usually secure, but check for unsigned packages
         cmd2 = (
             "bash -lc 'if command -v apt-key >/dev/null 2>&1; then "
-            "apt-key list 2>/dev/null | grep -c \"pub\"; fi'"
+            'apt-key list 2>/dev/null | grep -c "pub"; fi\''
         )
         code2, out2, _ = _run(ssh, cmd2)
         if code2 == 0 and out2.strip() == "0":
@@ -2555,9 +2557,7 @@ def check_logging_and_auditing(ssh: SSHSession, password: str = "") -> CheckResu
     category = "Logging & Auditing"
 
     # Check for logging daemons
-    cmd = (
-        "bash -lc 'ps aux | grep -E \"syslogd|rsyslogd|systemd-journald\" | grep -v grep | head -3'"
-    )
+    cmd = "bash -lc 'ps aux | grep -E \"syslogd|rsyslogd|systemd-journald\" | grep -v grep | head -3'"
     code, out, err = _run(ssh, cmd)
 
     if not out.strip():
@@ -2599,7 +2599,9 @@ def check_selinux_apparmor(ssh: SSHSession) -> CheckResult:
     code_se, out_se, _ = _run(ssh, cmd_selinux)
 
     # Check AppArmor
-    cmd_apparmor = "bash -lc 'command -v aa-status >/dev/null 2>&1 && aa-status --enabled 2>&1'"
+    cmd_apparmor = (
+        "bash -lc 'command -v aa-status >/dev/null 2>&1 && aa-status --enabled 2>&1'"
+    )
     code_aa, out_aa, _ = _run(ssh, cmd_apparmor)
 
     selinux_enforcing = out_se.strip() == "Enforcing"
@@ -2648,7 +2650,11 @@ def check_security_tools(ssh: SSHSession) -> CheckResult:
         "chkrootkit": "chkrootkit (rootkit scanner)",
     }
 
-    cmd = "bash -lc 'for tool in " + " ".join(tools.keys()) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    cmd = (
+        "bash -lc 'for tool in "
+        + " ".join(tools.keys())
+        + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    )
     code, out, _ = _run(ssh, cmd)
 
     found = []
@@ -2778,7 +2784,11 @@ def check_compiler_presence(ssh: SSHSession) -> CheckResult:
     category = "System Tools"
 
     compilers = ["gcc", "g++", "cc", "clang", "make"]
-    cmd = "bash -lc 'for tool in " + " ".join(compilers) + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    cmd = (
+        "bash -lc 'for tool in "
+        + " ".join(compilers)
+        + "; do command -v $tool 2>/dev/null && echo $tool; done'"
+    )
 
     code, out, _ = _run(ssh, cmd)
 
@@ -2804,7 +2814,11 @@ def check_legacy_services(ssh: SSHSession) -> CheckResult:
     category = "Network Security"
 
     legacy_services = ["telnetd", "rshd", "rlogind", "vsftpd", "proftpd"]
-    cmd = "bash -lc 'ps aux | grep -E \"" + "|".join(legacy_services) + "\" | grep -v grep'"
+    cmd = (
+        "bash -lc 'ps aux | grep -E \""
+        + "|".join(legacy_services)
+        + "\" | grep -v grep'"
+    )
 
     code, out, _ = _run(ssh, cmd)
 
@@ -2830,7 +2844,7 @@ def check_usb_storage(ssh: SSHSession, password: str = "") -> CheckResult:
 
     cmd = (
         "bash -lc 'lsmod | grep usb_storage || "
-        "grep -r \"install usb-storage /bin/true\" /etc/modprobe.d/ 2>/dev/null'"
+        'grep -r "install usb-storage /bin/true" /etc/modprobe.d/ 2>/dev/null\''
     )
     if password:
         cmd = f"sudo -S {cmd}"
@@ -2944,18 +2958,20 @@ def check_database_security(ssh: SSHSession, password: str = "") -> CheckResult:
         )
 
     issues = []
-    db_type = "mysql" if "mysql" in out.lower() or "mariadb" in out.lower() else "postgresql"
+    db_type = (
+        "mysql" if "mysql" in out.lower() or "mariadb" in out.lower() else "postgresql"
+    )
 
     # Check MySQL/MariaDB
     if db_type == "mysql":
         # Check for anonymous users
-        cmd2 = "bash -lc 'mysql -e \"SELECT User,Host FROM mysql.user WHERE User=\\\"\\\" OR User IS NULL;\" 2>/dev/null | wc -l'"
+        cmd2 = 'bash -lc \'mysql -e "SELECT User,Host FROM mysql.user WHERE User=\\"\\" OR User IS NULL;" 2>/dev/null | wc -l\''
         code2, out2, _ = _run(ssh, cmd2)
         if code2 == 0 and int(out2.strip() or "0") > 1:
             issues.append("Anonymous MySQL users exist")
 
         # Check for remote root
-        cmd3 = "bash -lc 'mysql -e \"SELECT User,Host FROM mysql.user WHERE User=\\\"root\\\" AND Host!=\\\"localhost\\\";\" 2>/dev/null | wc -l'"
+        cmd3 = 'bash -lc \'mysql -e "SELECT User,Host FROM mysql.user WHERE User=\\"root\\" AND Host!=\\"localhost\\";" 2>/dev/null | wc -l\''
         code3, out3, _ = _run(ssh, cmd3)
         if code3 == 0 and int(out3.strip() or "0") > 1:
             issues.append("Remote root access enabled")
@@ -2972,7 +2988,7 @@ def check_database_security(ssh: SSHSession, password: str = "") -> CheckResult:
             issues.append("Trust authentication enabled in pg_hba.conf")
 
     # Check for network binding
-    cmd_net = "bash -lc 'netstat -tlnp 2>/dev/null | grep -E \"3306|5432\" | grep \"0.0.0.0\\|::\" || ss -tlnp 2>/dev/null | grep -E \"3306|5432\" | grep \"0.0.0.0\\|::\"'"
+    cmd_net = 'bash -lc \'netstat -tlnp 2>/dev/null | grep -E "3306|5432" | grep "0.0.0.0\\|::" || ss -tlnp 2>/dev/null | grep -E "3306|5432" | grep "0.0.0.0\\|::"\''
     if password:
         cmd_net = f"sudo -S {cmd_net}"
     code_net, out_net, _ = _run(ssh, cmd_net, password)
@@ -3001,7 +3017,9 @@ def check_mail_server_security(ssh: SSHSession, password: str = "") -> CheckResu
     category = "Mail Server"
 
     # Check for running mail servers
-    cmd = "bash -lc 'ps aux | grep -E \"postfix|exim|sendmail\" | grep -v grep | head -3'"
+    cmd = (
+        "bash -lc 'ps aux | grep -E \"postfix|exim|sendmail\" | grep -v grep | head -3'"
+    )
     code, out, _ = _run(ssh, cmd)
 
     if not out.strip():
@@ -3038,7 +3056,7 @@ def check_mail_server_security(ssh: SSHSession, password: str = "") -> CheckResu
             issues.append("TLS not enabled")
 
     # Check for SMTP on port 25 bound to all interfaces
-    cmd_net = "bash -lc 'netstat -tlnp 2>/dev/null | grep :25 | grep \"0.0.0.0\" || ss -tlnp 2>/dev/null | grep :25 | grep \"0.0.0.0\"'"
+    cmd_net = 'bash -lc \'netstat -tlnp 2>/dev/null | grep :25 | grep "0.0.0.0" || ss -tlnp 2>/dev/null | grep :25 | grep "0.0.0.0"\''
     if password:
         cmd_net = f"sudo -S {cmd_net}"
     code_net, out_net, _ = _run(ssh, cmd_net, password)
@@ -3050,7 +3068,7 @@ def check_mail_server_security(ssh: SSHSession, password: str = "") -> CheckResu
         return _warn(
             "Mail server",
             f"{server_type.title() if server_type else 'Mail server'} issues: {', '.join(issues)}",
-            f"Harden mail server: configure relay restrictions, enable TLS, restrict network binding",
+            "Harden mail server: configure relay restrictions, enable TLS, restrict network binding",
             category,
         )
 
@@ -3081,7 +3099,9 @@ def check_php_security(ssh: SSHSession, password: str = "") -> CheckResult:
     issues = []
 
     # Check critical PHP settings
-    dangerous_functions = "bash -lc 'php -r \"echo ini_get(\\\"disable_functions\\\");\" 2>/dev/null'"
+    dangerous_functions = (
+        'bash -lc \'php -r "echo ini_get(\\"disable_functions\\");" 2>/dev/null\''
+    )
     code2, out2, _ = _run(ssh, dangerous_functions)
 
     dangerous = ["exec", "shell_exec", "system", "passthru", "proc_open", "popen"]
@@ -3092,13 +3112,13 @@ def check_php_security(ssh: SSHSession, password: str = "") -> CheckResult:
             issues.append(f"Dangerous functions not disabled: {', '.join(missing[:3])}")
 
     # Check expose_php
-    cmd3 = "bash -lc 'php -r \"echo ini_get(\\\"expose_php\\\");\" 2>/dev/null'"
+    cmd3 = 'bash -lc \'php -r "echo ini_get(\\"expose_php\\");" 2>/dev/null\''
     code3, out3, _ = _run(ssh, cmd3)
     if code3 == 0 and out3.strip() == "1":
         issues.append("expose_php enabled (version disclosure)")
 
     # Check allow_url_fopen
-    cmd4 = "bash -lc 'php -r \"echo ini_get(\\\"allow_url_fopen\\\");\" 2>/dev/null'"
+    cmd4 = 'bash -lc \'php -r "echo ini_get(\\"allow_url_fopen\\");" 2>/dev/null\''
     code4, out4, _ = _run(ssh, cmd4)
     if code4 == 0 and out4.strip() == "1":
         issues.append("allow_url_fopen enabled (security risk)")
@@ -3124,7 +3144,9 @@ def check_dns_configuration(ssh: SSHSession, password: str = "") -> CheckResult:
     category = "Name Service"
 
     # Check resolv.conf
-    cmd = "bash -lc 'cat /etc/resolv.conf 2>/dev/null | grep -v \"^#\" | grep nameserver'"
+    cmd = (
+        "bash -lc 'cat /etc/resolv.conf 2>/dev/null | grep -v \"^#\" | grep nameserver'"
+    )
     code, out, _ = _run(ssh, cmd)
 
     if code != 0 or not out.strip():
