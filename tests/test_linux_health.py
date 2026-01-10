@@ -23,14 +23,25 @@ from linux_health.checks import (
     check_suspicious_network_connections,
     check_weak_password_policy,
     check_world_writable_system_files,
+    disable_command_cache,
     gather_rkhunter_scan,
     gather_system_info,
     gather_unused_packages,
+    reset_command_cache,
     run_all_checks,
 )
 from linux_health.cli import build_parser, parse_ports
 from linux_health.report import render_report, render_report_json, render_report_text
 from linux_health.scanner import COMMON_PORTS, PortStatus
+
+
+# Disable command caching for tests to ensure fresh mocks
+@pytest.fixture(scope="session", autouse=True)
+def _disable_cache_for_tests():
+    """Disable command cache during testing to prevent stale mock data."""
+    disable_command_cache()
+    yield
+    reset_command_cache()
 
 
 class TestParsePortsUtil:
