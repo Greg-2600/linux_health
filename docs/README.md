@@ -4,6 +4,7 @@ This directory contains supplementary documentation for Linux Health Security Sc
 
 ## Contents
 
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Project organization and file structure guide
 - **[FEATURES_ADDED.md](FEATURES_ADDED.md)** - Detailed feature documentation for v2.0.0 release
 - **[RELEASE_NOTES_v2.0.0.md](RELEASE_NOTES_v2.0.0.md)** - Release notes for v2.0.0
 
