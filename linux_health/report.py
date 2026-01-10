@@ -322,16 +322,16 @@ def render_report(
     detailed: DetailedSecurityInfo | None = None,
 ) -> str:
     """Render comprehensive security report in multiple formats.
-    
+
     Orchestrates rendering based on format selection, delegating to
     format-specific functions (text, markdown, JSON).
-    
+
     Args:
         system: System information from target
         checks: Security check results
         ports: Port scan results
         detailed: Optional detailed security information
-        
+
     Returns:
         Formatted report string
     """

@@ -2111,10 +2111,10 @@ class TestPerformanceOptimizations:
     def test_command_cache_stores_results(self):
         """Test that command cache stores and retrieves results."""
         from linux_health.checks import _COMMAND_CACHE, enable_command_cache
-        
+
         enable_command_cache()
         reset_command_cache()
-        
+
         # Create a mock SSH session
         mock_ssh = MagicMock()
         mock_ssh._client = MagicMock()
@@ -2126,12 +2126,12 @@ class TestPerformanceOptimizations:
             ),
             MagicMock(read=MagicMock(return_value=b""))
         )
-        
-        # Simulate running a command through _run  
+
+        # Simulate running a command through _run
         from linux_health.checks import _run
         cmd = "test command"
         result = _run(mock_ssh, cmd, use_cache=True)
-        
+
         # Verify result structure
         assert isinstance(result, tuple)
         assert len(result) == 3  # (exit_code, stdout, stderr)
@@ -2139,10 +2139,10 @@ class TestPerformanceOptimizations:
     def test_cache_cleared_between_sessions(self):
         """Test that cache can be cleared for new sessions."""
         from linux_health.checks import _COMMAND_CACHE
-        
+
         reset_command_cache()
         assert len(_COMMAND_CACHE) == 0
-        
+
         reset_command_cache()
         assert len(_COMMAND_CACHE) == 0
 
@@ -2159,7 +2159,7 @@ class TestEdgeCases:
             uptime="1 day",
             users="1"
         )
-        
+
         # Empty checks list
         output = render_report(system_info, [], [])
         assert isinstance(output, str)
@@ -2174,7 +2174,7 @@ class TestEdgeCases:
             details="",
             recommendation="None"
         )
-        
+
         assert check.details == ""
         assert check.status == "pass"
 
@@ -2188,7 +2188,7 @@ class TestEdgeCases:
             details=f"Details with special chars: {special_chars}",
             recommendation="Keep safe"
         )
-        
+
         assert special_chars in check.details
         assert "你好" in check.item
         assert "мир" in check.item
@@ -2202,7 +2202,7 @@ class TestEdgeCases:
             uptime="365 days, 23 hours",
             users="0"  # No logged in users
         )
-        
+
         assert len(system.hostname) > 20
         assert "Custom" in system.os
         assert system.users == "0"

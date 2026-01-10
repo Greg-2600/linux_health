@@ -45,13 +45,13 @@ except ImportError:
 
 def parse_ports(raw: str | None) -> list[int]:
     """Parse comma-separated port list or return common ports.
-    
+
     Args:
         raw: Comma-separated port string or None
-        
+
     Returns:
         List of port integers, or COMMON_PORTS if empty
-        
+
     Raises:
         argparse.ArgumentTypeError: If any port is not a valid integer
     """
@@ -71,7 +71,7 @@ def parse_ports(raw: str | None) -> list[int]:
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and return argument parser for CLI.
-    
+
     Returns:
         Configured argparse.ArgumentParser instance
     """
@@ -137,10 +137,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     """Execute the security scan orchestration from CLI arguments.
-    
+
     Args:
         argv: Command-line arguments (defaults to sys.argv[1:] if None)
-        
+
     Returns:
         Exit code (0 for success, 1 for errors)
     """
@@ -163,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Apply per-command timeout for all SSH execs
     set_command_timeout(args.command_timeout)
-    
+
     # Reset command cache for fresh scan results
     from .checks import reset_command_cache
     reset_command_cache()

@@ -23,7 +23,7 @@ def set_command_timeout(seconds: float) -> None:
 
 def reset_command_cache() -> None:
     """Reset the command output cache between sessions.
-    
+
     Performance optimization: Clear cached command results to prevent
     stale data when running multiple scans in the same process.
     """
@@ -88,17 +88,17 @@ def _run(
     use_cache: bool = True,
 ) -> Tuple[int, str, str]:
     """Run command on SSH session with optional output caching.
-    
+
     Performance optimization: Command outputs are cached during a scan session
     to avoid redundant remote execution. Cache is keyed by command string.
-    
+
     Args:
         ssh: SSH session object
         command: Command to execute
         password: Optional sudo password
         command_timeout: Custom timeout for this command
         use_cache: Whether to use cached results (default: True)
-        
+
     Returns:
         Tuple of (return_code, stdout, stderr)
     """
@@ -106,7 +106,7 @@ def _run(
     cache_key = command
     if use_cache and _USE_CACHE and cache_key in _COMMAND_CACHE:
         return _COMMAND_CACHE[cache_key]
-    
+
     # Run command on SSH session with a hard timeout, sending sudo password when needed.
     # Check if this is a mock object (for testing)
     if (
