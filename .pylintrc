@@ -1,0 +1,15 @@
+[MASTER]
+ignore=__pycache__
+
+[MESSAGES CONTROL]
+disable=
+	C,
+	R,
+	W0212,
+	W0404,
+	W0602,
+	W0603,
+	W0611,
+	W0612,
+	W0613,
+	W0718
