@@ -220,7 +220,7 @@ This project was inspired by **Lynis** and implements many of its core security 
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/linux_health.git
+git clone https://github.com/Greg-2600/linux_health.git
 cd linux_health
 
 # Create virtual environment
@@ -291,7 +291,7 @@ Without these configurations, the container cannot reach the host's SSH service 
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/linux_health.git
+git clone https://github.com/Greg-2600/linux_health.git
 cd linux_health
 
 # Create isolated environment
@@ -1298,7 +1298,7 @@ linux_health/
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/linux_health.git
+git clone https://github.com/Greg-2600/linux_health.git
 cd linux_health
 
 # Create isolated environment
