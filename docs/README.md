@@ -43,7 +43,7 @@ Welcome to the comprehensive documentation for **Linux Health Security Scanner v
 - 📈 **Hardening Index** - 0-100 score with per-category breakdown
 
 #### Technical Improvements
-- 138+ unit tests (100% passing)
+- 334 unit tests (100% passing)
 - Professional code quality (Black/Pylint)
 - Docker support with CI/CD ready
 - Comprehensive documentation

@@ -2,7 +2,7 @@
 
 ## Enterprise-Grade Security Assessment Platform for Linux Infrastructure
 
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-success)](https://github.com) [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com) [![Tests](https://img.shields.io/badge/tests-331%2F334%20passing-success)](https://github.com) [![Coverage](https://img.shields.io/badge/coverage-76%25-green)](https://github.com) [![Code Quality](https://img.shields.io/badge/linting-0%20errors-success)](https://github.com) [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org) [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com) [![Lynis Parity](https://img.shields.io/badge/lynis%20parity-95%25-brightgreen)](https://github.com)
+[![Production Ready](https://img.shields.io/badge/status-production%20ready-success)](https://github.com) [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com) [![Tests](https://img.shields.io/badge/tests-334%2F334%20passing-success)](https://github.com) [![Coverage](https://img.shields.io/badge/coverage-76%25-green)](https://github.com) [![Code Quality](https://img.shields.io/badge/linting-0%20errors-success)](https://github.com) [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org) [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com) [![Lynis Parity](https://img.shields.io/badge/lynis%20parity-95%25-brightgreen)](https://github.com)
 
 ---
 
@@ -23,7 +23,7 @@ Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+
 - **📈 Hardening Index** — 0-100 scoring with per-category breakdown and quality gates
 - **📄 Multiple Output Formats** — Text, Markdown, and **JSON** for automation and integration
 - **⚙️ Profile System** — YAML-based configuration for environment-specific scanning
-- **⚡ Production Hardened** — Full test suite (107+ tests passing), robust error handling, Docker-ready
+- **⚡ Production Hardened** — Full test suite (334 tests passing), robust error handling, Docker-ready
 - **📋 Executive Reporting** — Professional reports with hardening scores and remediation guidance
 - **🔧 Extensible Architecture** — Modular design enables rapid custom check development
 - **🐳 Container Native** — Full Docker/Kubernetes support for CI/CD integration
