@@ -130,7 +130,7 @@ def _run(
                 if time.monotonic() > deadline:
                     stdout.channel.close()
                     return -1, "", f"command timeout after {effective_timeout}s"
-                time.sleep(0.01)
+                time.sleep(0.001)
 
             exit_status = stdout.channel.recv_exit_status()
             out = stdout.read().decode("utf-8", errors="replace").strip()
