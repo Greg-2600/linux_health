@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Test JSON output format."""
 
-import sys
-
-sys.path.insert(0, "/home/greg/projects/linux_health")
-
-from linux_health.checks import CheckResult, SystemInfo, DetailedSecurityInfo
-from linux_health.scanner import PortStatus
-from linux_health.report import render_report_json
 import json
+
+from linux_health.checks import CheckResult, DetailedSecurityInfo, SystemInfo
+from linux_health.report import render_report_json
+from linux_health.scanner import PortStatus
 
 # Create test data
 system = SystemInfo(
@@ -16,7 +13,7 @@ system = SystemInfo(
     os="Ubuntu 22.04 LTS",
     kernel="5.15.0-58-generic",
     uptime="up 5 days",
-    users=["user1", "user2"],
+    users="user1,user2",
 )
 
 checks = [
@@ -26,7 +23,7 @@ checks = [
         status="pass",
         details="Disk is 45% full",
         recommendation="No action",
-        test_id="STOR-6310",
+        test_id="STOR-6310"
     ),
     CheckResult(
         category="Memory",
@@ -34,7 +31,7 @@ checks = [
         status="warn",
         details="78% memory used",
         recommendation="Investigate memory usage",
-        test_id="MEM-2914",
+        test_id="MEM-2914"
     ),
     CheckResult(
         category="Authentication",
@@ -42,7 +39,7 @@ checks = [
         status="fail",
         details="PermitRootLogin enabled",
         recommendation="Disable root login",
-        test_id="SSH-7408",
+        test_id="SSH-7408"
     ),
 ]
 
@@ -53,18 +50,18 @@ ports = [
 ]
 
 detailed = DetailedSecurityInfo(
-    suid_binaries=["test"],
-    root_logins=[],
-    successful_ssh_logins=[],
-    failed_ssh_logins=[],
-    top_processes=[],
-    disk_usage_dirs=[],
-    available_updates=[],
-    firewall_rules=[],
-    sshd_config_check=[],
-    failed_systemd_units=[],
-    sudoers_info=[],
-    critical_file_permissions=[],
+    suid_binaries="test",
+    root_logins="0",
+    successful_ssh_logins="0",
+    failed_ssh_logins="0",
+    top_processes="",
+    disk_usage_dirs="",
+    available_updates="",
+    firewall_rules="",
+    sshd_config_check="",
+    failed_systemd_units="",
+    sudoers_info="",
+    critical_file_permissions="",
 )
 
 # Generate JSON report
@@ -79,14 +76,14 @@ print(f"\nTotal checks: {len(report['checks'])}")
 print(f"Open ports: {len(report['ports']['open_ports'])}")
 
 # Verify structure
-assert "scan_info" in report
-assert "system" in report
-assert "summary" in report
-assert "hardening_by_category" in report
-assert "checks" in report
-assert "ports" in report
-assert report["summary"]["hardening_index"] > 0
-assert report["summary"]["hardening_index"] <= 100
+assert 'scan_info' in report
+assert 'system' in report
+assert 'summary' in report
+assert 'hardening_by_category' in report
+assert 'checks' in report
+assert 'ports' in report
+assert report['summary']['hardening_index'] > 0
+assert report['summary']['hardening_index'] <= 100
 
 print("\n✅ All JSON structure validations passed!")
 print(f"Hardening Index: {report['summary']['hardening_index']}/100")
