@@ -1,3 +1,7 @@
+"""Integration tests for linux_health CLI and scanner."""
+
+# pylint: disable=protected-access,duplicate-code,line-too-long,too-many-lines,too-few-public-methods,redefined-outer-name,import-outside-toplevel,trailing-newlines,reimported,unused-import
+
 import json
 import tempfile
 from pathlib import Path
@@ -1471,7 +1475,7 @@ class TestCommandTimeout:
 
     def test_set_command_timeout(self):
         """Test setting command timeout"""
-        from linux_health.checks import COMMAND_TIMEOUT, set_command_timeout
+        from linux_health.checks import set_command_timeout
 
         set_command_timeout(120.0)
 
@@ -1489,8 +1493,8 @@ class TestCommandTimeout:
         assert True
 
 
-class TestDetailedSecurityInfo:
-    """Tests for detailed security information collection"""
+class TestDetailedSecurityInfoCommands:
+    """Tests for detailed security information collection commands"""
 
     def test_gather_suid_binaries(self):
         """Test gathering SUID binaries"""
@@ -2110,7 +2114,7 @@ class TestPerformanceOptimizations:
 
     def test_command_cache_stores_results(self):
         """Test that command cache stores and retrieves results."""
-        from linux_health.checks import _COMMAND_CACHE, enable_command_cache
+        from linux_health.checks import enable_command_cache
 
         enable_command_cache()
         reset_command_cache()
@@ -2122,13 +2126,17 @@ class TestPerformanceOptimizations:
             MagicMock(write=MagicMock(), flush=MagicMock(), close=MagicMock()),
             MagicMock(
                 read=MagicMock(return_value=b"test output"),
-                channel=MagicMock(exit_status_ready=MagicMock(return_value=True), recv_exit_status=MagicMock(return_value=0))
+                channel=MagicMock(
+                    exit_status_ready=MagicMock(return_value=True),
+                    recv_exit_status=MagicMock(return_value=0),
+                ),
             ),
-            MagicMock(read=MagicMock(return_value=b""))
+            MagicMock(read=MagicMock(return_value=b"")),
         )
 
         # Simulate running a command through _run
         from linux_health.checks import _run
+
         cmd = "test command"
         result = _run(mock_ssh, cmd, use_cache=True)
 
@@ -2157,7 +2165,7 @@ class TestEdgeCases:
             os="Ubuntu 22.04",
             kernel="5.15.0",
             uptime="1 day",
-            users="1"
+            users="1",
         )
 
         # Empty checks list
@@ -2172,7 +2180,7 @@ class TestEdgeCases:
             item="Empty Details Check",
             status="pass",
             details="",
-            recommendation="None"
+            recommendation="None",
         )
 
         assert check.details == ""
@@ -2186,7 +2194,7 @@ class TestEdgeCases:
             item="Unicode Test: 你好 мир",
             status="pass",
             details=f"Details with special chars: {special_chars}",
-            recommendation="Keep safe"
+            recommendation="Keep safe",
         )
 
         assert special_chars in check.details
@@ -2200,7 +2208,7 @@ class TestEdgeCases:
             os="Custom-Linux-Distro-v1.2.3",
             kernel="6.0.0-rc1+",
             uptime="365 days, 23 hours",
-            users="0"  # No logged in users
+            users="0",  # No logged in users
         )
 
         assert len(system.hostname) > 20
@@ -2210,4 +2218,3 @@ class TestEdgeCases:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

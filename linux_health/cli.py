@@ -31,6 +31,13 @@ from .checks import (
     run_all_checks,
     set_command_timeout,
 )
+from .checks_audit import run_all_audit_checks
+from .checks_container import run_all_checks as run_all_container_checks
+from .checks_database import run_all_database_checks
+from .checks_dns import run_all_dns_checks
+from .checks_filesystem import run_all_filesystem_checks
+from .checks_packages import run_all_package_management_checks
+from .checks_webserver import run_all_webserver_checks
 from .report import render_report, render_report_json, render_report_text
 from .scanner import COMMON_PORTS, scan_ports
 from .ssh_client import SSHSession
@@ -166,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Reset command cache for fresh scan results
     from .checks import reset_command_cache
+
     reset_command_cache()
 
     try:
@@ -178,6 +186,33 @@ def main(argv: list[str] | None = None) -> int:
         ) as ssh:
             system_info = gather_system_info(ssh)
             check_results = run_all_checks(ssh, password)
+
+            # Run new Phase 1 checks (Database & Audit)
+            database_results = run_all_database_checks(ssh, password)
+            audit_results = run_all_audit_checks(ssh, password)
+            check_results.extend(database_results)
+            check_results.extend(audit_results)
+
+            # Run Phase 2 checks (Filesystem & NFS)
+            filesystem_results = run_all_filesystem_checks(ssh, password)
+            check_results.extend(filesystem_results)
+
+            # Run Phase 2 checks (Extended Package Management)
+            package_results = run_all_package_management_checks(ssh, password)
+            check_results.extend(package_results)
+
+            # Run Phase 3 checks (Container Security)
+            container_results = run_all_container_checks(ssh, args.command_timeout)
+            check_results.extend(container_results)
+
+            # Run Phase 3 checks (Web Server Security)
+            webserver_results = run_all_webserver_checks(ssh, password)
+            check_results.extend(webserver_results)
+
+            # Run Phase 3 checks (DNS Security)
+            dns_results = run_all_dns_checks(ssh, password)
+            check_results.extend(dns_results)
+
             detailed_security = DetailedSecurityInfo(
                 suid_binaries=gather_suid_binaries(ssh),
                 root_logins=gather_root_logins(ssh),

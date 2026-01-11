@@ -23,7 +23,7 @@ checks = [
         status="pass",
         details="Disk is 45% full",
         recommendation="No action",
-        test_id="STOR-6310"
+        test_id="STOR-6310",
     ),
     CheckResult(
         category="Memory",
@@ -31,7 +31,7 @@ checks = [
         status="warn",
         details="78% memory used",
         recommendation="Investigate memory usage",
-        test_id="MEM-2914"
+        test_id="MEM-2914",
     ),
     CheckResult(
         category="Authentication",
@@ -39,7 +39,7 @@ checks = [
         status="fail",
         details="PermitRootLogin enabled",
         recommendation="Disable root login",
-        test_id="SSH-7408"
+        test_id="SSH-7408",
     ),
 ]
 
@@ -76,14 +76,14 @@ print(f"\nTotal checks: {len(report['checks'])}")
 print(f"Open ports: {len(report['ports']['open_ports'])}")
 
 # Verify structure
-assert 'scan_info' in report
-assert 'system' in report
-assert 'summary' in report
-assert 'hardening_by_category' in report
-assert 'checks' in report
-assert 'ports' in report
-assert report['summary']['hardening_index'] > 0
-assert report['summary']['hardening_index'] <= 100
+assert "scan_info" in report
+assert "system" in report
+assert "summary" in report
+assert "hardening_by_category" in report
+assert "checks" in report
+assert "ports" in report
+assert report["summary"]["hardening_index"] > 0
+assert report["summary"]["hardening_index"] <= 100
 
 print("\n✅ All JSON structure validations passed!")
 print(f"Hardening Index: {report['summary']['hardening_index']}/100")

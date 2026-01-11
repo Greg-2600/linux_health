@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
-from functools import lru_cache
 from typing import List, Tuple
 
 from .ssh_client import SSHSession
@@ -116,7 +115,9 @@ def _run(
     ):
         try:
             effective_timeout = command_timeout or COMMAND_TIMEOUT
-            stdin, stdout, stderr = ssh._client.exec_command(command, timeout=effective_timeout)
+            stdin, stdout, stderr = ssh._client.exec_command(
+                command, timeout=effective_timeout
+            )
 
             # If password provided and command uses sudo -S, write password to stdin
             if password and "sudo -S" in command:
@@ -162,12 +163,14 @@ def gather_system_info(ssh: SSHSession) -> SystemInfo:
         (
             "bash -lc '"
             "if [ -f /etc/os-release ]; then . /etc/os-release && "
-            "echo \"\\$NAME \\$VERSION\"; else uname -s; fi'"
+            'echo "\\$NAME \\$VERSION"; else uname -s; fi\''
         ),
     )
     _, uptime, _ = _run(ssh, "uptime -p || uptime")
     _, users, _ = _run(ssh, "who -q")
-    return SystemInfo(hostname=hostname, os=os_release, kernel=kernel, uptime=uptime, users=users)
+    return SystemInfo(
+        hostname=hostname, os=os_release, kernel=kernel, uptime=uptime, users=users
+    )
 
 
 def _pass(
@@ -221,7 +224,9 @@ def check_disk_usage(ssh: SSHSession) -> CheckResult:
         )
     match = re.search(r"(\d+)%", out)
     if not match:
-        return _warn("Disk usage", f"Unexpected df output: {out}", "Run df -h", category)
+        return _warn(
+            "Disk usage", f"Unexpected df output: {out}", "Run df -h", category
+        )
     pct = int(match.group(1))
     if pct >= 90:
         return _fail(
@@ -249,11 +254,15 @@ def check_memory(ssh: SSHSession) -> CheckResult:
     category = "Memory"
     code, out, err = _run(ssh, "free -m | awk '/Mem:/ {print $2, $7}'")
     if code != 0:
-        return _warn("Memory", f"free failed: {err or out}", "Run free -m manually", category)
+        return _warn(
+            "Memory", f"free failed: {err or out}", "Run free -m manually", category
+        )
     try:
         total, avail = map(int, out.split())
     except ValueError:
-        return _warn("Memory", f"Unexpected free output: {out}", "Run free -m", category)
+        return _warn(
+            "Memory", f"Unexpected free output: {out}", "Run free -m", category
+        )
     avail_pct = int((avail / total) * 100)
     if avail_pct < 10:
         return _fail(
@@ -455,7 +464,9 @@ def check_ssh_config(ssh: SSHSession, password: str = "") -> List[CheckResult]:
         )
         security_score += 0
 
-    permit_root = re.search(r"(?:^|\n)permitrootlogin\s+(\S+)", out, re.IGNORECASE | re.MULTILINE)
+    permit_root = re.search(
+        r"(?:^|\n)permitrootlogin\s+(\S+)", out, re.IGNORECASE | re.MULTILINE
+    )
     if permit_root and permit_root.group(1).lower() in {"no", "prohibit-password"}:
         results.append(
             _pass(
@@ -717,7 +728,9 @@ def check_listening_services(ssh: SSHSession) -> CheckResult:
             "Run 'ss -tulpn' manually",
             category,
         )
-    public = [line for line in out.splitlines() if "0.0.0.0:" in line or "[::]:" in line]
+    public = [
+        line for line in out.splitlines() if "0.0.0.0:" in line or "[::]:" in line
+    ]
 
     # Categorize services by type
     categories_dict = {
@@ -872,7 +885,10 @@ def check_abnormal_network_processes(ssh: SSHSession) -> CheckResult:
 
         # Check for suspicious patterns
         for pattern, reason in suspicious_names.items():
-            if pattern in process_part.lower() or pattern.strip() in process_part.lower():
+            if (
+                pattern in process_part.lower()
+                or pattern.strip() in process_part.lower()
+            ):
                 abnormal_findings.append(f"{process_part}: {reason}")
                 is_suspicious = True
                 break
@@ -880,7 +896,9 @@ def check_abnormal_network_processes(ssh: SSHSession) -> CheckResult:
         # Check if it's an unexpected/unknown service (only if not already marked suspicious)
         if not is_suspicious:
             service_name = process_part.split("/")[0].split("[")[0].strip()
-            if service_name and not any(exp in service_name.lower() for exp in expected_services):
+            if service_name and not any(
+                exp in service_name.lower() for exp in expected_services
+            ):
                 # Could be custom service, log it
                 port_match = re.search(r":(\d+)\s", line)
                 if port_match:
@@ -968,7 +986,9 @@ def check_unexpected_sudo_usage(ssh: SSHSession, password: str = "") -> CheckRes
     # Flag entries without password requirement (NOPASSWD)
     if "NOPASSWD" in out:
         nopasswd_count = out.count("NOPASSWD")
-        unusual_patterns.append(f"{nopasswd_count} NOPASSWD sudoers entry/entries (high risk)")
+        unusual_patterns.append(
+            f"{nopasswd_count} NOPASSWD sudoers entry/entries (high risk)"
+        )
 
     # Flag entries running commands as root without password
     if "ALL=(ALL) ALL" in out or "ALL=(ALL:ALL) ALL" in out:
@@ -1039,7 +1059,9 @@ def check_recently_created_accounts(ssh: SSHSession) -> CheckResult:
         try:
             timestamp_str, username = line.split("|")
             # Parse timestamp like "2025-12-28 14:22:55"
-            timestamp = datetime.strptime(timestamp_str.split(".")[0], "%Y-%m-%d %H:%M:%S")
+            timestamp = datetime.strptime(
+                timestamp_str.split(".")[0], "%Y-%m-%d %H:%M:%S"
+            )
             if timestamp > thirty_days_ago:
                 days_old = (now - timestamp).days
                 recent_accounts.append(f"{username} ({days_old} days old)")
@@ -1231,7 +1253,9 @@ def check_cron_and_timers(ssh: SSHSession) -> CheckResult:
             "Review cron entries and systemd timers for legitimacy; check /etc/cron.* and systemctl list-timers",
             category,
         )
-    return _pass("Cron/Timers", details, "Keep cron/timers minimal and documented", category)
+    return _pass(
+        "Cron/Timers", details, "Keep cron/timers minimal and documented", category
+    )
 
 
 def check_stale_user_accounts(ssh: SSHSession) -> CheckResult:
@@ -1280,7 +1304,8 @@ def check_stale_user_accounts(ssh: SSHSession) -> CheckResult:
 
     if stale_users:
         stale_list = ", ".join(
-            f"{u}({d}d)" for u, d in sorted(stale_users, key=lambda x: x[1], reverse=True)
+            f"{u}({d}d)"
+            for u, d in sorted(stale_users, key=lambda x: x[1], reverse=True)
         )
         return _warn(
             "Stale user accounts",
@@ -1305,7 +1330,9 @@ def check_process_resource_usage(ssh: SSHSession) -> CheckResult:
         "ps aux --sort=-%cpu --sort=-%mem | head -4 | tail -3 | awk '{print $1, $3, $4, $11}' | tr '\n' '|'",
     )
     if code != 0 or not out.strip():
-        return _pass("Process monitoring", "Processes OK", "Monitor with 'top -o %CPU'", category)
+        return _pass(
+            "Process monitoring", "Processes OK", "Monitor with 'top -o %CPU'", category
+        )
 
     # Check for high CPU or memory processes
     high_cpu = False
@@ -1332,7 +1359,9 @@ def check_process_resource_usage(ssh: SSHSession) -> CheckResult:
                 pass
 
     if high_cpu or high_mem:
-        details = ", ".join(details_list) if details_list else "High resource usage detected"
+        details = (
+            ", ".join(details_list) if details_list else "High resource usage detected"
+        )
         return _warn(
             "Process monitoring",
             details,
@@ -1599,9 +1628,7 @@ def gather_unused_packages(ssh: SSHSession, password: str = "") -> str | None:
 
         # Check for common development tools
         dev_packages = ["build-essential", "gcc", "g++", "python3-dev", "git"]
-        dev_check_cmd = (
-            f"dpkg -l 2>/dev/null | grep -E '{','.join(dev_packages)}' | awk '{{print $2}}' || true"
-        )
+        dev_check_cmd = f"dpkg -l 2>/dev/null | grep -E '{','.join(dev_packages)}' | awk '{{print $2}}' || true"
         code, out, err = _run(ssh, dev_check_cmd)
         if out.strip():
             results.append("\n=== Installed Development Tools ===")
@@ -1610,9 +1637,7 @@ def gather_unused_packages(ssh: SSHSession, password: str = "") -> str | None:
 
         # Check for known bloat packages
         bloat = ["telnet", "talk", "rsh-client", "nis", "xserver-xorg", "cups"]
-        bloat_check_cmd = (
-            f"dpkg -l 2>/dev/null | grep -E '{','.join(bloat)}' | awk '{{print $2}}' || true"
-        )
+        bloat_check_cmd = f"dpkg -l 2>/dev/null | grep -E '{','.join(bloat)}' | awk '{{print $2}}' || true"
         code, out, err = _run(ssh, bloat_check_cmd)
         if out.strip():
             results.append("\n=== Potentially Unnecessary Packages ===")
@@ -1765,7 +1790,9 @@ def check_kernel_module_integrity(ssh: SSHSession, password: str = "") -> CheckR
     cmd = "lsmod | wc -l"
     code, out, err = _run(ssh, cmd)
     if code != 0:
-        return _warn("Kernel modules", f"lsmod failed: {err or out}", "Check manually", category)
+        return _warn(
+            "Kernel modules", f"lsmod failed: {err or out}", "Check manually", category
+        )
 
     try:
         module_count = int(out.strip()) - 1  # Subtract header
@@ -1934,11 +1961,15 @@ def check_container_escape_indicators(ssh: SSHSession) -> CheckResult:
         )
 
     # Not in container - check if Docker daemon is exposing host
-    cmd_docker = "bash -lc 'ps aux | grep \"dockerd\\|containerd\" | grep -v grep | wc -l'"
+    cmd_docker = (
+        "bash -lc 'ps aux | grep \"dockerd\\|containerd\" | grep -v grep | wc -l'"
+    )
     code4, docker_running, _ = _run(ssh, cmd_docker)
 
     try:
-        has_docker = int(docker_running.strip()) > 0 if docker_running.strip() else False
+        has_docker = (
+            int(docker_running.strip()) > 0 if docker_running.strip() else False
+        )
     except ValueError:
         has_docker = False
 
@@ -2010,7 +2041,9 @@ def check_dns_tampering(ssh: SSHSession) -> CheckResult:
     """Verify DNS resolver integrity and check for DNS hijacking."""
     category = "Network Security"
     # Check resolv.conf for suspicious nameservers
-    cmd = "bash -lc 'grep nameserver /etc/resolv.conf 2>/dev/null | awk \"{print \\$2}\"'"
+    cmd = (
+        "bash -lc 'grep nameserver /etc/resolv.conf 2>/dev/null | awk \"{print \\$2}\"'"
+    )
     code, out, err = _run(ssh, cmd)
 
     if code != 0:
@@ -2085,7 +2118,9 @@ def check_crypto_miners(ssh: SSHSession) -> CheckResult:
         "t-rex",
     ]
 
-    cmd = f"bash -lc 'ps aux | grep -iE \"({'|'.join(miner_patterns)})\" | grep -v grep'"
+    cmd = (
+        f"bash -lc 'ps aux | grep -iE \"({'|'.join(miner_patterns)})\" | grep -v grep'"
+    )
     code, out, err = _run(ssh, cmd)
 
     if out.strip():
@@ -2162,7 +2197,8 @@ def check_file_integrity_critical_binaries(ssh: SSHSession) -> CheckResult:
 
     # Check if binaries exist and have expected permissions
     cmd_check = (
-        f"bash -lc 'ls -la {' '.join(critical_bins)} 2>/dev/null | " 'awk "{print \\$1, \\$9}"\''
+        f"bash -lc 'ls -la {' '.join(critical_bins)} 2>/dev/null | "
+        'awk "{print \\$1, \\$9}"\''
     )
     code2, perm_out, _ = _run(ssh, cmd_check)
 
@@ -2259,15 +2295,15 @@ def check_log_tampering(ssh: SSHSession, password: str = "") -> CheckResult:
     )
 
 
-def check_privilege_escalation_vectors(ssh: SSHSession, password: str = "") -> CheckResult:
+def check_privilege_escalation_vectors(
+    ssh: SSHSession, password: str = ""
+) -> CheckResult:
     """Check for common privilege escalation vulnerabilities."""
     category = "Privilege Escalation"
     vectors = []
 
     # Check for NOPASSWD in sudoers
-    cmd_sudo = (
-        "bash -lc 'grep -r NOPASSWD /etc/sudoers.d/ /etc/sudoers 2>/dev/null | grep -v \"^#\"'"
-    )
+    cmd_sudo = "bash -lc 'grep -r NOPASSWD /etc/sudoers.d/ /etc/sudoers 2>/dev/null | grep -v \"^#\"'"
     if password:
         cmd_sudo = f"sudo -S {cmd_sudo}"
     code, sudo_out, _ = _run(ssh, cmd_sudo, password)
@@ -2547,7 +2583,10 @@ def check_package_manager_security(ssh: SSHSession) -> CheckResult:
     code, out, err = _run(ssh, cmd)
 
     issues = []
-    if 'AllowUnauthenticated "true"' in out or 'AllowInsecureRepositories "true"' in out:
+    if (
+        'AllowUnauthenticated "true"' in out
+        or 'AllowInsecureRepositories "true"' in out
+    ):
         issues.append("APT allows unauthenticated packages")
 
     if "gpgcheck=0" in out:
@@ -2584,9 +2623,7 @@ def check_logging_and_auditing(ssh: SSHSession, password: str = "") -> CheckResu
     category = "Logging & Auditing"
 
     # Check for logging daemons
-    cmd = (
-        "bash -lc 'ps aux | grep -E \"syslogd|rsyslogd|systemd-journald\" | grep -v grep | head -3'"
-    )
+    cmd = "bash -lc 'ps aux | grep -E \"syslogd|rsyslogd|systemd-journald\" | grep -v grep | head -3'"
     code, out, err = _run(ssh, cmd)
 
     if not out.strip():
@@ -2628,7 +2665,9 @@ def check_selinux_apparmor(ssh: SSHSession) -> CheckResult:
     code_se, out_se, _ = _run(ssh, cmd_selinux)
 
     # Check AppArmor
-    cmd_apparmor = "bash -lc 'command -v aa-status >/dev/null 2>&1 && aa-status --enabled 2>&1'"
+    cmd_apparmor = (
+        "bash -lc 'command -v aa-status >/dev/null 2>&1 && aa-status --enabled 2>&1'"
+    )
     code_aa, out_aa, _ = _run(ssh, cmd_apparmor)
 
     selinux_enforcing = out_se.strip() == "Enforcing"
@@ -2841,7 +2880,11 @@ def check_legacy_services(ssh: SSHSession) -> CheckResult:
     category = "Network Security"
 
     legacy_services = ["telnetd", "rshd", "rlogind", "vsftpd", "proftpd"]
-    cmd = "bash -lc 'ps aux | grep -E \"" + "|".join(legacy_services) + "\" | grep -v grep'"
+    cmd = (
+        "bash -lc 'ps aux | grep -E \""
+        + "|".join(legacy_services)
+        + "\" | grep -v grep'"
+    )
 
     code, out, _ = _run(ssh, cmd)
 
@@ -2912,9 +2955,7 @@ def check_web_server_security(ssh: SSHSession, password: str = "") -> CheckResul
     # Check Apache configuration
     if server_type == "apache":
         # Check ServerTokens
-        cmd2 = (
-            "bash -lc 'grep -r \"^ServerTokens\" /etc/apache2/ /etc/httpd/ 2>/dev/null | head -1'"
-        )
+        cmd2 = "bash -lc 'grep -r \"^ServerTokens\" /etc/apache2/ /etc/httpd/ 2>/dev/null | head -1'"
         if password:
             cmd2 = f"sudo -S {cmd2}"
         code2, out2, _ = _run(ssh, cmd2, password)
@@ -2983,7 +3024,9 @@ def check_database_security(ssh: SSHSession, password: str = "") -> CheckResult:
         )
 
     issues = []
-    db_type = "mysql" if "mysql" in out.lower() or "mariadb" in out.lower() else "postgresql"
+    db_type = (
+        "mysql" if "mysql" in out.lower() or "mariadb" in out.lower() else "postgresql"
+    )
 
     # Check MySQL/MariaDB
     if db_type == "mysql":
@@ -3040,7 +3083,9 @@ def check_mail_server_security(ssh: SSHSession, password: str = "") -> CheckResu
     category = "Mail Server"
 
     # Check for running mail servers
-    cmd = "bash -lc 'ps aux | grep -E \"postfix|exim|sendmail\" | grep -v grep | head -3'"
+    cmd = (
+        "bash -lc 'ps aux | grep -E \"postfix|exim|sendmail\" | grep -v grep | head -3'"
+    )
     code, out, _ = _run(ssh, cmd)
 
     if not out.strip():
@@ -3120,7 +3165,9 @@ def check_php_security(ssh: SSHSession, password: str = "") -> CheckResult:
     issues = []
 
     # Check critical PHP settings
-    dangerous_functions = 'bash -lc \'php -r "echo ini_get(\\"disable_functions\\");" 2>/dev/null\''
+    dangerous_functions = (
+        'bash -lc \'php -r "echo ini_get(\\"disable_functions\\");" 2>/dev/null\''
+    )
     code2, out2, _ = _run(ssh, dangerous_functions)
 
     dangerous = ["exec", "shell_exec", "system", "passthru", "proc_open", "popen"]
@@ -3163,7 +3210,9 @@ def check_dns_configuration(ssh: SSHSession, password: str = "") -> CheckResult:
     category = "Name Service"
 
     # Check resolv.conf
-    cmd = "bash -lc 'cat /etc/resolv.conf 2>/dev/null | grep -v \"^#\" | grep nameserver'"
+    cmd = (
+        "bash -lc 'cat /etc/resolv.conf 2>/dev/null | grep -v \"^#\" | grep nameserver'"
+    )
     code, out, _ = _run(ssh, cmd)
 
     if code != 0 or not out.strip():
