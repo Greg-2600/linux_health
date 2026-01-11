@@ -1471,7 +1471,6 @@ class TestCommandTimeout:
 
     def test_set_command_timeout(self):
         """Test setting command timeout"""
-<<<<<<< HEAD
         from linux_health.checks import COMMAND_TIMEOUT, set_command_timeout
 
         set_command_timeout(120.0)

@@ -14,7 +14,6 @@ system = SystemInfo(
     os="Ubuntu 22.04 LTS",
     kernel="5.15.0-58-generic",
     uptime="up 5 days",
-<<<<<<< HEAD
     users=["user1", "user2"],
 )
 

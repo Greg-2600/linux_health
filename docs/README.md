@@ -20,7 +20,6 @@ Welcome to the comprehensive documentation for **Linux Health Security Scanner v
 - **[../.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md)** - Contribution guidelines
 - **[../.github/CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md)** - Community code of conduct
 
-<<<<<<< HEAD
 #### Planning & Roadmap (v3.0+)
 - **[ANALYSIS_SUMMARY.md](ANALYSIS_SUMMARY.md)** - Executive summary of Linux Health vs Lynis analysis
 - **[LYNIS_COMPARISON.md](LYNIS_COMPARISON.md)** - Detailed feature-by-feature comparison with Lynis
