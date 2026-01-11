@@ -1,14 +1,14 @@
 # Linux Health Security Scanner
 
-**Enterprise-Grade Security Assessment Platform for Linux Infrastructure**
+## Enterprise-Grade Security Assessment Platform for Linux Infrastructure
 
-[![Production Ready](https://img.shields.io/badge/status-production%20ready-success)](https://github.com) [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com) [![Tests](https://img.shields.io/badge/tests-107%2F107%20passing-success)](https://github.com) [![Coverage](https://img.shields.io/badge/coverage-66%25-yellow)](https://github.com) [![Code Quality](https://img.shields.io/badge/linting-0%20errors-success)](https://github.com) [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org) [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com) [![Lynis Parity](https://img.shields.io/badge/lynis%20parity-95%25-brightgreen)](https://github.com)
+[![Production Ready](https://img.shields.io/badge/status-production%20ready-success)](https://github.com) [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com) [![Tests](https://img.shields.io/badge/tests-331%2F334%20passing-success)](https://github.com) [![Coverage](https://img.shields.io/badge/coverage-76%25-green)](https://github.com) [![Code Quality](https://img.shields.io/badge/linting-0%20errors-success)](https://github.com) [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org) [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com) [![Lynis Parity](https://img.shields.io/badge/lynis%20parity-95%25-brightgreen)](https://github.com)
 
 ---
 
 ## Overview
 
-Linux Health Security Scanner is a comprehensive, SSH-based security assessment platform designed for enterprise Linux environments. Delivering **50+ automated security checks** across malware detection, vulnerability assessment, compliance monitoring, and system health analysis—all without requiring agent installation.
+Linux Health Security Scanner is a comprehensive, SSH-based security assessment platform designed for enterprise Linux environments. Delivering **100+ automated security checks** across malware detection, vulnerability assessment, compliance monitoring, database security, filesystem hardening, package management, audit logging, and system health analysis—all without requiring agent installation.
 
 Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+ feature parity** with enterprise-ready capabilities including **test ID tracking**, **JSON output**, **profile-based configuration**, **hardening index scoring**, and **actionable remediation guidance**.
 
@@ -18,7 +18,7 @@ Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+
 
 - **🔒 Zero-Touch Deployment** — Agentless SSH-based assessment eliminates installation overhead
 - **🎯 Advanced Threat Detection** — Identifies reverse shells, crypto miners, rootkits, and sophisticated attacks
-- **📊 Comprehensive Coverage** — **50+ security checks** spanning **20+ categories**
+- **📊 Comprehensive Coverage** — **100+ security checks** spanning **24 categories** (database, filesystem, NFS, package security, audit)
 - **🆔 Test ID System** — Lynis-compatible test identifiers for precise tracking and filtering
 - **📈 Hardening Index** — 0-100 scoring with per-category breakdown and quality gates
 - **📄 Multiple Output Formats** — Text, Markdown, and **JSON** for automation and integration
@@ -33,15 +33,15 @@ Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+
 ---
 
 > ### 🎉 What's New in v2.0.0
-> 
+>
 > **Lynis Parity Achieved!** This release brings **95%+ feature compatibility** with the industry-standard Lynis security auditing tool:
-> 
+>
 > - **🆔 Test ID System** — Track and filter checks with Lynis-compatible identifiers (`STOR-6310`, `AUTH-9328`)
-> - **📄 JSON Output** — Machine-readable reports for CI/CD pipelines and security orchestration platforms  
+> - **📄 JSON Output** — Machine-readable reports for CI/CD pipelines and security orchestration platforms
 > - **⚙️ Profile System** — YAML configuration for environment-specific scanning (production, dev, compliance)
 > - **🔍 Advanced Filtering** — Skip tests by ID/category or run exclusive test subsets
 > - **🔗 CI/CD Integration** — Ready-to-use templates for GitLab, GitHub Actions, Jenkins, Azure DevOps
-> 
+>
 > **Fully backward compatible** with v1.x | [See full changelog →](#changelog)
 
 ---
@@ -79,7 +79,7 @@ Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+
 ### Coverage Matrix
 
 | Security Domain | Checks | Detection Capabilities |
-|----------------|--------|------------------------|
+| -------------- | ------ | ---------------------- |
 | **System Resources** | 4 | Disk utilization, memory availability, CPU load analysis, process resource consumption |
 | **Patch Management** | 2 | Reboot requirements, pending security/standard updates (distribution-aware) |
 | **Network Security** | 7 | Firewall status, suspicious connections, ARP spoofing, DNS tampering, listener analysis, legacy services |
@@ -108,7 +108,7 @@ Inspired by industry-standard tools like **Lynis**, this scanner achieves **95%+
 | **Application Security** | 1 | PHP configuration hardening, dangerous functions, version disclosure |
 | **Name Service** | 1 | DNS resolver configuration, DNSSEC validation, redundancy checks |
 
-**Total: 50+ Security Checks** across **20+ domains**
+**Total: 100+ Security Checks** across **24 domains**
 
 ### Platform Capabilities
 
@@ -140,7 +140,7 @@ Overall index = Weighted average across all categories
 ### Hardening Levels
 
 | Score Range | Level | Interpretation |
-|-------------|-------|----------------|
+| ----------- | ----- | -------------- |
 | 90-100 | 🟢 EXCELLENT | Exceptional security posture; minimal vulnerabilities |
 | 75-89 | 🟡 GOOD | Strong security baseline; minor improvements recommended |
 | 60-74 | 🟠 FAIR | Adequate security; several areas need attention |
@@ -149,7 +149,7 @@ Overall index = Weighted average across all categories
 
 ### Report Output Example
 
-```
+```text
 HARDENING INDEX: 72/100 🟠 (FAIR)
 
 HARDENING BY CATEGORY
@@ -170,7 +170,7 @@ This project was inspired by **Lynis** and implements many of its core security 
 ### Feature Parity
 
 | Feature | Linux Health Scanner | Lynis |
-|---------|---------------------|-------|
+| ------- | ------------------- | ----- |
 | **Agentless SSH-based scanning** | ✅ | ❌ (requires local execution) |
 | **Hardening index (0-100)** | ✅ | ✅ |
 | **Category-based organization** | ✅ | ✅ |
@@ -194,18 +194,21 @@ This project was inspired by **Lynis** and implements many of its core security 
 ### Key Differences
 
 **Advantages of Linux Health Scanner:**
+
 - **Remote execution** — No agent installation; scan multiple systems from one location
 - **Modern Python stack** — Easy to extend and integrate
 - **Docker-first** — Native containerization for CI/CD pipelines
 - **Markdown reporting** — Beautiful reports for documentation and dashboards
 
 **Advantages of Lynis:**
+
 - **Mature ecosystem** — 15+ years of development, extensive check library
 - **Compliance templates** — Pre-built PCI-DSS, HIPAA, ISO27001 checks
 - **Enterprise edition** — Centralized dashboard, scheduled scanning, API
 - **Broader OS support** — AIX, HP-UX, Solaris, macOS
 
 **Use Cases:**
+
 - **Linux Health Scanner**: Remote auditing, CI/CD security gates, container security, fleet scanning
 - **Lynis**: Deep local auditing, compliance reporting, enterprise-wide security management
 
@@ -213,7 +216,7 @@ This project was inspired by **Lynis** and implements many of its core security 
 
 ## Quick Start
 
-### Installation
+### Quick Installation
 
 ```bash
 # Clone repository
@@ -272,6 +275,7 @@ docker run --rm linux-health \
 
 **Important Note for Scanning Localhost:**
 When running the scanner in a Docker container to audit the **host machine itself** (localhost), you must use one of these approaches:
+
 - **Linux:** Use `--network host` flag and target `localhost` or `127.0.0.1`
 - **Mac/Windows (Docker Desktop):** Use the special hostname `host.docker.internal`
 
@@ -353,7 +357,7 @@ python -m linux_health <hostname> <username> <password> [options]
 #### Required Arguments
 
 | Argument | Description |
-|----------|-------------|
+| -------- | ----------- |
 | `hostname` | Target Linux host (IP address or FQDN) |
 | `username` | SSH authentication username |
 | `password` | SSH authentication password (use `-` with `--ask-password` for interactive) |
@@ -361,7 +365,7 @@ python -m linux_health <hostname> <username> <password> [options]
 #### Optional Arguments
 
 | Flag | Default | Description |
-|------|---------|-------------|
+| ---- | ------- | ----------- |
 | `--port PORT` | 22 | SSH service port |
 | `--timeout SECONDS` | 5.0 | SSH connection timeout |
 | `--command-timeout SECONDS` | 60.0 | Per-command execution timeout |
@@ -487,7 +491,7 @@ python -m linux_health remote.example.com admin password \
 ### Critical Threat Detection
 
 | Check | Detection Method | Indicators | Severity |
-|-------|------------------|------------|----------|
+| ---- | --------------- | --------- | -------- |
 | **Reverse Shells** | Process pattern matching | `bash -i`, `/dev/tcp/`, `nc -e`, `socat EXEC` | FAIL |
 | **Cryptocurrency Mining** | Process and network analysis | xmrig, minerd, pool connections (ports 3333, 4444, 5555) | FAIL |
 | **Suspicious Connections** | TCP connection filtering | External connections excluding RFC1918, localhost | WARN/FAIL |
@@ -501,7 +505,7 @@ python -m linux_health remote.example.com admin password \
 ### Vulnerability Assessment
 
 | Check | Identifies | Detection Logic | Severity |
-|-------|-----------|-----------------|----------|
+| ----- | --------- | --------------- | -------- |
 | **Privilege Escalation Vectors** | NOPASSWD sudo, dangerous capabilities, CVE-vulnerable sudo | Parse `/etc/sudoers`, check capabilities, version matching | FAIL if 2+ vectors |
 | **Weak Password Policy** | Missing/insufficient PAM configuration | Validate pam_pwquality, pam_cracklib presence | FAIL if absent |
 | **Container Escape Risks** | Privileged containers, `--privileged` flag | Check cgroup membership, mount points | FAIL if privileged |
@@ -513,7 +517,7 @@ python -m linux_health remote.example.com admin password \
 ### System Health Monitoring
 
 | Check | Metric | Thresholds | Action |
-|-------|--------|-----------|--------|
+| ----- | ------ | ---------- | ------ |
 | **Disk Usage** | Root filesystem capacity | WARN: 80%, FAIL: 90% | Cleanup recommendations |
 | **Memory Availability** | Available RAM | WARN: <20%, FAIL: <10% | Process termination suggestions |
 | **System Load** | 1m, 5m, 15m load averages | WARN: >4.0, FAIL: >8.0 | Top CPU consumers |
@@ -527,7 +531,7 @@ python -m linux_health remote.example.com admin password \
 ### Account Security
 
 | Check | Detects | Logic | Remediation |
-|-------|---------|-------|-------------|
+| ----- | ------- | ----- | ----------- |
 | **Root Accounts** | Multiple UID 0 accounts | Parse `/etc/passwd` for UID=0 | Remove unauthorized root accounts |
 | **Stale Accounts** | Inactive users (>90 days) | Check lastlog output | Lock/disable dormant accounts |
 | **Recent Account Creation** | Accounts created <30 days | Modification time of `/etc/passwd` entries | Verify legitimacy, check home directories |
@@ -700,6 +704,7 @@ Machine-readable structured output for automation and tool integration:
 ```
 
 **JSON Output Benefits:**
+
 - 🤖 **CI/CD Integration** — Parse results in pipelines
 - 📊 **Dashboard Ingestion** — Feed security platforms (Grafana, ELK)
 - 🔍 **Programmatic Analysis** — Query with `jq`, Python, etc.
@@ -823,9 +828,8 @@ Generate machine-readable JSON reports for seamless integration with security or
 }
 ```
 
-#### Usage Examples
+#### Generate JSON Report
 
-**Generate JSON Report:**
 ```bash
 # Output to stdout
 python -m linux_health HOST USER PASS --format json
@@ -838,6 +842,7 @@ python -m linux_health HOST USER PASS --format json | jq '.'
 ```
 
 **Parse Hardening Index:**
+
 ```bash
 # Extract hardening score
 SCORE=$(python -m linux_health HOST USER PASS --format json | \
@@ -850,7 +855,8 @@ if [ $SCORE -lt 70 ]; then
 fi
 ```
 
-**Python Integration:**
+#### Python Script Integration
+
 ```python
 import json
 import subprocess
@@ -940,6 +946,7 @@ The scanner automatically searches for profiles in the following locations (in o
 #### Creating Profile Templates
 
 **Quick Scan Profile** (skip time-intensive checks):
+
 ```yaml
 name: "Quick Security Scan"
 description: "Fast scan for CI/CD pipelines"
@@ -953,6 +960,7 @@ command_timeout: 30
 ```
 
 **CIS Benchmark Profile** (compliance-focused):
+
 ```yaml
 name: "CIS Benchmark Validation"
 description: "Tests aligned with CIS Ubuntu Linux Benchmark"
@@ -967,6 +975,7 @@ only_tests:
 ```
 
 **Development Environment Profile** (permissive):
+
 ```yaml
 name: "Development Workstation"
 description: "Skip production-only security checks"
@@ -1016,7 +1025,7 @@ if profile and HAS_CONFIG:
     ]
 ```
 
-#### Benefits & Use Cases
+#### Profile Use Cases
 
 - **Environment Optimization:** Different profiles for production, staging, development
 - **Compliance Scanning:** Run only tests relevant to specific frameworks (PCI-DSS, HIPAA, CIS)
@@ -1143,11 +1152,12 @@ docker network create --driver bridge security-network
 docker run --rm --network security-network linux-health host user password
 ```
 
-**⚠️ Important: Scanning Localhost from Docker Container**
+### Important: Scanning Localhost from Docker Container
 
 When running the scanner in Docker to audit the **host machine itself**, the container needs special network configuration:
 
 **Linux:**
+
 ```bash
 # Use host network mode to access localhost SSH
 docker run --rm --network host linux-health localhost username password
@@ -1157,6 +1167,7 @@ docker run --rm --network host linux-health localhost username password
 ```
 
 **macOS / Windows (Docker Desktop):**
+
 ```bash
 # Docker Desktop provides a special DNS name
 docker run --rm linux-health host.docker.internal username password
@@ -1166,6 +1177,7 @@ docker run --rm linux-health host.docker.internal username password
 ```
 
 **Why this is needed:**
+
 - Docker containers run in isolated network namespaces
 - `localhost` inside a container refers to the container itself, not the host
 - Without `--network host` (Linux) or `host.docker.internal` (Mac/Win), the SSH connection fails
@@ -1218,7 +1230,7 @@ docker push ghcr.io/$GITHUB_USER/linux-health:latest
 
 ### Project Architecture
 
-```
+```text
 linux_health/
 ├── linux_health/                    # Core application package
 │   ├── __init__.py                 # Package initialization, version metadata
@@ -1244,6 +1256,7 @@ linux_health/
 ### Core Module Descriptions
 
 #### `checks.py` (2,400+ lines)
+
 - 36+ independent security check functions
 - Threat detection and vulnerability assessment logic
 - Modular architecture enabling parallel execution
@@ -1252,6 +1265,7 @@ linux_health/
 - Optional scan integration: rkhunter, package analysis
 
 #### `cli.py` (169 lines)
+
 - argparse-based command-line interface
 - SSH session lifecycle management
 - Report generation coordination
@@ -1259,6 +1273,7 @@ linux_health/
 - Optional check orchestration
 
 #### `report.py` (374 lines)
+
 - Text format renderer (80-column terminal optimized)
 - Markdown format renderer (GitHub-compatible)
 - Status-grouped check sorting (FAIL → WARN → PASS)
@@ -1266,12 +1281,14 @@ linux_health/
 - System information collection and display
 
 #### `scanner.py` (56 lines)
+
 - Lightweight TCP connect scanner
 - Non-invasive connection-based detection
 - Concurrent port scanning (ThreadPoolExecutor)
 - Customizable port lists and timeouts
 
 #### `ssh_client.py` (60 lines)
+
 - Paramiko SSHClient wrapper
 - Connection pooling compatible
 - Configurable timeout and retry logic
@@ -1463,6 +1480,7 @@ black linux_health/ tests/ && ruff check linux_health/ tests/
 ```
 
 **Standards:**
+
 - **Formatter:** Black (88-character line length)
 - **Linter:** Ruff (E, F, W rule categories)
 - **Type Hints:** Recommended for all new functions
@@ -1483,7 +1501,7 @@ black linux_health/ tests/ && ruff check linux_health/ tests/
 ### Module Coverage Breakdown
 
 | Module | Lines | Covered | Coverage | Focus Areas |
-|--------|-------|---------|----------|-------------|
+| ------ | ----- | ------- | -------- | ----------- |
 | `checks.py` | 952 | 673 | **71%** | Security check logic, threat detection |
 | `cli.py` | 68 | 39 | **57%** | Argument parsing, orchestration |
 | `report.py` | 274 | 119 | **43%** | Text/Markdown formatting |
@@ -1493,6 +1511,7 @@ black linux_health/ tests/ && ruff check linux_health/ tests/
 ### Test Categories
 
 #### Unit Tests (107 total)
+
 - **Check Logic** (70 tests): Pass/warn/fail scenarios, error handling
 - **CLI Interface** (13 tests): Argument parsing, validation
 - **Port Scanner** (5 tests): Port scanning, connection handling
@@ -1885,7 +1904,7 @@ stages:
             displayName: 'Evaluate Security Posture'
 ```
 
-### Python Script Integration
+### Python Integration
 
 ```python
 #!/usr/bin/env python3
@@ -2224,12 +2243,14 @@ ssh -o PasswordAuthentication=yes -o PubkeyAuthentication=no user@host
 ### Unicode/Encoding Errors
 
 **Windows:**
+
 ```powershell
 $env:PYTHONIOENCODING="utf-8"
 python -m linux_health host user password
 ```
 
 **Linux/macOS:**
+
 ```bash
 export PYTHONIOENCODING=utf-8
 export LC_ALL=en_US.UTF-8
@@ -2255,6 +2276,7 @@ scanuser ALL=(ALL) NOPASSWD: /usr/sbin/rkhunter
 ### Docker Issues
 
 **Image build failures:**
+
 ```bash
 # Clear build cache
 docker builder prune --all
@@ -2267,6 +2289,7 @@ docker build --check -f Dockerfile .
 ```
 
 **Container runtime errors:**
+
 ```bash
 # View container logs
 docker logs <container-id>
@@ -2282,6 +2305,7 @@ docker inspect linux-health:latest | grep -A 5 Entrypoint
 ```
 
 **Volume mount issues (Windows):**
+
 ```powershell
 # Use absolute paths
 docker run --rm -v "C:\reports:/reports" linux-health ...
@@ -2293,6 +2317,7 @@ docker run --rm -v "C:\reports:/reports" linux-health ...
 ### Report Generation Issues
 
 **Output file not created:**
+
 ```bash
 # Verify write permissions
 ls -la $(dirname /path/to/output.md)
@@ -2307,6 +2332,7 @@ python -m linux_health host user password --format text
 ```
 
 **Malformed Markdown:**
+
 ```bash
 # Validate Markdown syntax
 pip install mdformat
@@ -2319,6 +2345,7 @@ cat scan_report.md | pandoc -f markdown -t html > report.html
 ### Performance Issues
 
 **Slow scan execution:**
+
 ```bash
 # Increase per-command timeout
 python -m linux_health host user password \
@@ -2334,6 +2361,7 @@ python -m linux_health host user password \
 ```
 
 **High latency networks:**
+
 ```bash
 # Optimize all timeouts
 python -m linux_health host user password \
@@ -2347,9 +2375,10 @@ python -m linux_health host user password \
 
 ### Credential Management
 
-**⚠️ Security Best Practices**
+### ⚠️ Security Best Practices
 
 1. **SSH Keys (Recommended)**
+
    ```bash
    # Generate key pair
    ssh-keygen -t ed25519 -C "security-scanner"
@@ -2361,12 +2390,14 @@ python -m linux_health host user password \
    ```
 
 2. **Interactive Passwords**
+
    ```bash
    python -m linux_health host user - --ask-password
    # Password not logged or visible in process list
    ```
 
 3. **Environment Variables**
+
    ```bash
    read -s SSH_PASS
    python -m linux_health host user "$SSH_PASS"
@@ -2374,6 +2405,7 @@ python -m linux_health host user password \
    ```
 
 4. **Secrets Management**
+
    ```bash
    # HashiCorp Vault
    export SSH_PASS=$(vault kv get -field=password secret/ssh/scanner)
@@ -2418,7 +2450,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ### Runtime Requirements
 
 | Component | Version | Purpose |
-|-----------|---------|---------|
+| --------- | ------- | ------- |
 | **Python** | 3.11+ | Core runtime environment |
 | **paramiko** | 3.0.0+ | SSH protocol implementation |
 | **PyYAML** | 6.0+ | Profile/configuration support (optional) |
@@ -2430,7 +2462,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ### Development Requirements
 
 | Component | Version | Purpose |
-|-----------|---------|---------|
+| --------- | ------- | ------- |
 | **pytest** | 7.0.0+ | Test framework |
 | **pytest-cov** | 4.0.0+ | Coverage reporting |
 | **pytest-mock** | 3.10.0+ | Mocking utilities |
@@ -2440,12 +2472,14 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ### System Requirements
 
 **Scanner Host:**
+
 - Linux, macOS, or Windows
 - Python 3.11+ installed
 - Network access to targets
 - SSH client (for manual verification)
 
 **Target Systems:**
+
 - Any Linux distribution (Ubuntu, Debian, RHEL, CentOS, Fedora, Alpine, etc.)
 - SSH server running (OpenSSH recommended)
 - User account with appropriate privileges
@@ -2456,7 +2490,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ## Performance Characteristics
 
 | Metric | Typical | Optimized | Notes |
-|--------|---------|-----------|-------|
+| ------ | ------- | --------- | ----- |
 | **Single Host Scan** | 45-75s | 30-45s | Depends on system load, network latency |
 | **SSH Connection** | 2-5s | 1-2s | With key-based auth |
 | **Port Scan** | 5-10s | 2-5s | Default ports (5), concurrent execution |
@@ -2464,6 +2498,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 | **Report Generation** | <1s | <1s | Negligible impact |
 
 **Optimization Opportunities:**
+
 - Parallel check execution (future enhancement)
 - SSH connection pooling
 - Cached system information
@@ -2474,6 +2509,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ## Support
 
 ### Documentation
+
 - **Installation:** See [Installation](#installation)
 - **Usage Examples:** See [Usage](#usage)
 - **Docker Guide:** See [Docker Deployment](#docker-deployment)
@@ -2483,12 +2519,14 @@ sudo ausearch -k scanner_activity  # If auditd configured
 ### Issue Reporting
 
 **Before opening an issue:**
+
 1. ✅ Check [Troubleshooting](#troubleshooting) section
 2. ✅ Review existing GitHub issues
 3. ✅ Verify you're using latest version
 4. ✅ Test with `--timeout 60 --command-timeout 180`
 
 **When reporting issues, include:**
+
 - Host OS and Python version (`python --version`)
 - Target OS and kernel version
 - Complete error message and stack trace
@@ -2500,6 +2538,7 @@ sudo ausearch -k scanner_activity  # If auditd configured
 See [Development Guide](#development-guide) for contribution guidelines.
 
 **Quick Contribution Checklist:**
+
 - [ ] All tests passing (`pytest tests/ -v`)
 - [ ] Code linted (`ruff check --fix . && black .`)
 - [ ] New tests added for new features
@@ -2542,6 +2581,7 @@ Creates GitHub Release + publishes to PyPI + Docker Hub
 ### Contributing Guidelines
 
 See [`.github/CONTRIBUTING.md`](./.github/CONTRIBUTING.md) for detailed guidelines on:
+
 - Setting up development environment
 - Code standards (Black, Ruff, type hints)
 - Testing requirements (>70% coverage)
@@ -2576,9 +2616,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### v2.0.0 — Lynis Parity Release (2026-01-10)
 
-**🎯 95%+ Feature Parity with Lynis Achieved**
+### 95%+ Feature Parity with Lynis Achieved
 
-**Major Features**
+#### Major Features
+
 - ✅ **Test ID System** — Lynis-compatible test identifiers (e.g., `STOR-6310`, `AUTH-9328`, `BOOT-5122`)
   - Precise test identification for debugging and tracking
   - Cross-run comparison and historical trend analysis
@@ -2615,28 +2656,33 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   - `--profile <path>` — Load YAML configuration profile
   - Backward compatible with v1.x
 
-**Integration Enhancements**
+#### Integration Enhancements
+
 - ✅ CI/CD pipeline examples (GitLab CI, GitHub Actions, Jenkins, Azure DevOps)
 - ✅ Python script integration templates
 - ✅ Quality gate implementations (hardening index thresholds)
 - ✅ Fleet-wide scanning patterns
 
-**Dependencies**
+#### Dependencies
+
 - ✅ Added PyYAML ≥6.0 for profile system
 - ✅ Graceful degradation if PyYAML not installed
 
-**Documentation**
+#### Documentation (v2.0.0 Enhancements)
+
 - ✅ Comprehensive Advanced Features section
 - ✅ JSON output structure documentation
 - ✅ Profile system guide with examples
 - ✅ CI/CD integration cookbook
 - ✅ Test ID reference and usage patterns
 
-**Comparison**
+#### Comparison
+
 - Before: ~75% Lynis parity (core checks, hardening index, basic reporting)
 - After: **~95% Lynis parity** (all core features + unique SSH remote scanning)
 
-**Upgrade Notes**
+#### Upgrade Notes
+
 - Fully backward compatible with v1.x
 - New features require `pip install pyyaml` (optional)
 - Existing scripts work without changes
@@ -2646,26 +2692,30 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ### v1.0.0 — Initial Production Release (2026-01-08)
 
-**Security Checks**
+#### Security Checks
+
 - ✅ 36+ comprehensive security assessments
 - ✅ Advanced threat detection (reverse shells, crypto miners, rootkits)
 - ✅ Vulnerability assessment (privilege escalation, weak configs)
 - ✅ System health monitoring (disk, memory, CPU, processes)
 
-**Platform Features**
+#### Platform Features
+
 - ✅ Agentless SSH-based assessment
 - ✅ Docker/Kubernetes support
 - ✅ Text and Markdown reporting
 - ✅ Configurable timeouts
 - ✅ Optional deep scans (rkhunter, package hygiene)
 
-**Quality Assurance**
+#### Quality Assurance
+
 - ✅ 107 unit tests (100% pass rate)
 - ✅ 66% code coverage (71% checks.py, 100% scanner.py, 100% ssh_client.py)
 - ✅ Zero linting errors (ruff, black)
 - ✅ Production hardened
 
-**Documentation**
+#### Documentation (v1.0.0 Release)
+
 - ✅ Comprehensive README
 - ✅ Docker deployment guide
 - ✅ Development guide
@@ -2682,9 +2732,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-<div align="center">
-
-**🔒 Enterprise Linux Security Assessment Platform 🔒**
+## Enterprise Linux Security Assessment Platform
 
 [![Production Ready](https://img.shields.io/badge/status-production%20ready-success)](https://github.com)
 [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com)
@@ -2692,8 +2740,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [![Lynis Parity](https://img.shields.io/badge/lynis%20parity-95%25-brightgreen)](https://github.com)
 [![Docker](https://img.shields.io/badge/docker-supported-blue)](https://docker.com)
 
-**Built with ❤️ for security professionals worldwide**
+### Built with ❤️ for security professionals worldwide
 
-*Achieving enterprise-grade security assessment with the simplicity of agentless SSH*
-
-</div>
+Achieving enterprise-grade security assessment with the simplicity of agentless SSH
