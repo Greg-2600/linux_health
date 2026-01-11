@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test JSON output format."""
 
+sys.path.insert(0, "/home/greg/projects/linux_health")
 import json
 
 from linux_health.checks import CheckResult, DetailedSecurityInfo, SystemInfo
@@ -13,7 +14,8 @@ system = SystemInfo(
     os="Ubuntu 22.04 LTS",
     kernel="5.15.0-58-generic",
     uptime="up 5 days",
-    users="user1,user2",
+<<<<<<< HEAD
+    users=["user1", "user2"],
 )
 
 checks = [

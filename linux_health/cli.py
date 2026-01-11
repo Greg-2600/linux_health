@@ -31,6 +31,7 @@ from .checks import (
     run_all_checks,
     set_command_timeout,
 )
+<<<<<<< HEAD
 from .checks_audit import run_all_audit_checks
 from .checks_container import run_all_checks as run_all_container_checks
 from .checks_database import run_all_database_checks
@@ -38,6 +39,8 @@ from .checks_dns import run_all_dns_checks
 from .checks_filesystem import run_all_filesystem_checks
 from .checks_packages import run_all_package_management_checks
 from .checks_webserver import run_all_webserver_checks
+=======
+>>>>>>> origin/master
 from .report import render_report, render_report_json, render_report_text
 from .scanner import COMMON_PORTS, scan_ports
 from .ssh_client import SSHSession
@@ -173,7 +176,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # Reset command cache for fresh scan results
     from .checks import reset_command_cache
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
     reset_command_cache()
 
     try:
